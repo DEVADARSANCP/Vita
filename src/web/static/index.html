@@ -3,69 +3,358 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VITA — Patient Intake &amp; Triage</title>
+<title>VITA — Patient Intake</title>
+<link rel="stylesheet" href="/static/vita.css">
 <style>
-  :root {
-    --bg: #f7f8fa; --panel: #ffffff; --ink: #16181d; --muted: #6b7280;
-    --line: #e4e7ec; --accent: #1a6fd4;
-    --ok: #1b7f4b; --warn: #a86612; --stop: #b3261e;
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; }
+
+  .intro { text-align: center; padding: 40px 0 28px; }
+  .intro h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .intro p  { color: var(--muted); margin: 0; }
+
+  .chat { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+
+  .msg { display: flex; }
+  .msg.patient { justify-content: flex-end; }
+
+  .bubble {
+    max-width: 82%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    line-height: 1.5;
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  .msg.vita .bubble    { background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.patient .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+
+  .why {
+    margin-top: 7px;
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  main { max-width: 640px; margin: 0 auto; padding: 64px 24px; }
-  h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 4px; }
-  .tag { color: var(--muted); margin: 0 0 40px; }
-  .panel {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 20px 22px;
+
+  .composer { display: flex; gap: 8px; align-items: flex-end; }
+  .composer textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; }
+
+  .setup { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+
+  .outcome { margin-top: 24px; }
+  .outcome .headline {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line);
   }
-  .row { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
-  .row + .row { border-top: 1px solid var(--line); }
-  .k { color: var(--muted); }
-  .v { font-variant-numeric: tabular-nums; }
-  .mode { font-weight: 600; }
-  .mode.FULL { color: var(--ok); }
-  .mode.DEGRADED { color: var(--warn); }
-  .mode.OFFLINE { color: var(--stop); }
-  .note { color: var(--muted); font-size: 13px; margin-top: 24px; }
+  .outcome .headline .dept { font-weight: 600; }
+  .section { margin-top: 18px; }
+  .section h4 {
+    margin: 0 0 8px; font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); font-weight: 650;
+  }
+  .reason { padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+  .reason:last-child { border-bottom: none; }
+  .reason .src { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .typing { color: var(--muted); font-size: 13px; font-style: italic; }
 </style>
 </head>
 <body>
-<main>
-  <h1>VITA</h1>
-  <p class="tag">Ask. Assess. Route. Escalate.</p>
 
-  <div class="panel">
-    <div class="row"><span class="k">Service</span><span class="v" id="app">—</span></div>
-    <div class="row"><span class="k">Version</span><span class="v" id="version">—</span></div>
-    <div class="row"><span class="k">Mode</span><span class="v mode" id="mode">—</span></div>
-    <div class="row"><span class="k">Gemini key</span><span class="v" id="key">—</span></div>
+<div class="topbar">
+  <div class="brand">VITA <small>Patient Intake</small></div>
+  <div class="spacer"></div>
+  <span class="mode" id="mode">…</span>
+  <a class="navlink" href="/dashboard">Hospital view →</a>
+</div>
+
+<div class="wrap">
+
+  <div id="start">
+    <div class="intro">
+      <h1>How can we help you today?</h1>
+      <p>Describe what is troubling you in your own words. Any language.</p>
+    </div>
+    <div class="setup">
+      <select id="language">
+        <option value="en">English</option>
+        <option value="ml">മലയാളം — Malayalam</option>
+        <option value="hi">हिन्दी — Hindi</option>
+        <option value="ta">தமிழ் — Tamil</option>
+        <option value="bn">বাংলা — Bengali</option>
+      </select>
+      <button class="primary" id="begin">Begin intake</button>
+    </div>
+    <div id="offline-note" style="margin-top:20px" hidden>
+      <div class="banner warn">
+        Language understanding is unavailable, so VITA cannot ask follow-up
+        questions. Critical presentations are still recognised, and every case
+        is passed to a clinician for review.
+      </div>
+    </div>
   </div>
 
-  <p class="note">
-    Skeleton build. The patient interface and hospital dashboard are not wired
-    up yet — this page confirms the service is running and reports what it can
-    currently do.
-  </p>
-</main>
+  <div id="session" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <span>Intake conversation</span>
+        <div class="spacer" style="flex:1"></div>
+        <span class="tiny muted" id="case-id"></span>
+      </div>
+      <div class="panel-body">
+        <div class="chat" id="chat"></div>
+        <div class="typing" id="typing" hidden>VITA is reading your message…</div>
+      </div>
+    </div>
+
+    <div class="composer" style="margin-top:14px" id="composer">
+      <textarea id="input" rows="1" placeholder="Type your answer…"></textarea>
+      <button class="primary" id="send">Send</button>
+    </div>
+
+    <div class="outcome panel" id="outcome" hidden>
+      <div class="panel-head">Intake complete</div>
+      <div class="panel-body" id="outcome-body"></div>
+    </div>
+
+    <p class="disclaimer">
+      VITA is a triage assistant, not a doctor. It does not diagnose and does not
+      prescribe. Every recommendation is produced by a fixed set of triage rules,
+      and the rule behind it is shown. If you feel you are in danger, tell a
+      member of staff immediately.
+    </p>
+  </div>
+
+</div>
 
 <script>
-  fetch("/api/health")
-    .then((r) => r.json())
-    .then((d) => {
-      document.getElementById("app").textContent = d.app;
-      document.getElementById("version").textContent = d.version;
-      document.getElementById("key").textContent = d.gemini_key_present ? "present" : "not set";
-      const mode = document.getElementById("mode");
-      mode.textContent = d.mode;
-      mode.classList.add(d.mode);
-    })
-    .catch(() => {
-      document.getElementById("mode").textContent = "unreachable";
+const $ = (id) => document.getElementById(id);
+let caseId = null;
+let finished = false;
+
+async function api(path, options) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+/* ---------- mode ---------- */
+
+async function refreshMode() {
+  try {
+    const health = await api("/api/health");
+    const el = $("mode");
+    el.textContent = health.mode;
+    el.className = `mode ${health.mode}`;
+    $("offline-note").hidden = health.mode === "FULL";
+  } catch {
+    $("mode").textContent = "unreachable";
+  }
+}
+
+/* ---------- chat ---------- */
+
+function bubble(role, text, meta) {
+  const row = document.createElement("div");
+  row.className = `msg ${role}`;
+
+  const box = document.createElement("div");
+  box.className = "bubble";
+  box.textContent = text;
+
+  if (meta && meta.rule) {
+    const why = document.createElement("div");
+    why.className = "why";
+    why.append("Asked because rule ");
+
+    const chip = document.createElement("span");
+    chip.className = "rule-chip";
+    chip.textContent = meta.rule;
+    chip.title = "Show this rule";
+    chip.onclick = () => showRule(meta.rule);
+    why.append(chip);
+    why.append(" could not yet be ruled out.");
+    box.append(why);
+  }
+
+  row.append(box);
+  $("chat").append(row);
+  row.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+async function showRule(ruleId) {
+  try {
+    const rule = await api(`/api/rules/${ruleId}`);
+    const conditions = rule.conditions.map((c) => `  • ${c.fact} ${c.op} ${c.value}`).join("\n");
+    alert(
+      `${rule.rule_id} — ${rule.urgency}, ${rule.department}\n\n` +
+      `${rule.rationale}\n\nConditions:\n${conditions}\n\nSource: ${rule.source}`
+    );
+  } catch {
+    alert(`Rule ${ruleId} could not be loaded.`);
+  }
+}
+
+/* ---------- session ---------- */
+
+$("begin").onclick = async () => {
+  $("begin").disabled = true;
+  try {
+    const started = await api("/api/cases", {
+      method: "POST",
+      body: JSON.stringify({ language: $("language").value }),
     });
+    caseId = started.case_id;
+    $("case-id").textContent = caseId;
+    $("start").hidden = true;
+    $("session").hidden = false;
+    bubble("vita", started.opening);
+    $("input").focus();
+  } catch (err) {
+    alert(`Could not start intake: ${err.message}`);
+    $("begin").disabled = false;
+  }
+};
+
+async function send() {
+  const input = $("input");
+  const text = input.value.trim();
+  if (!text || !caseId || finished) return;
+
+  bubble("patient", text);
+  input.value = "";
+  input.style.height = "auto";
+  $("send").disabled = true;
+  $("typing").hidden = false;
+
+  try {
+    const turn = await api(`/api/cases/${caseId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+
+    $("mode").textContent = turn.mode;
+    $("mode").className = `mode ${turn.mode}`;
+
+    bubble("vita", turn.reply, { rule: turn.driven_by_rule });
+
+    if (turn.finished) {
+      finished = true;
+      $("composer").hidden = true;
+      renderOutcome(turn.note);
+    }
+  } catch (err) {
+    bubble("vita", `Something went wrong on our side (${err.message}). A member of staff has your details.`);
+  } finally {
+    $("typing").hidden = true;
+    $("send").disabled = false;
+    input.focus();
+  }
+}
+
+$("send").onclick = send;
+$("input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+$("input").addEventListener("input", (e) => {
+  e.target.style.height = "auto";
+  e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+});
+
+/* ---------- outcome ---------- */
+
+function list(items, className) {
+  const ul = document.createElement("ul");
+  ul.className = `facts ${className || ""}`;
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.className = "muted";
+    li.textContent = "Nothing recorded.";
+    ul.append(li);
+    return ul;
+  }
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    ul.append(li);
+  }
+  return ul;
+}
+
+function section(title, node) {
+  const wrap = document.createElement("div");
+  wrap.className = "section";
+  const h = document.createElement("h4");
+  h.textContent = title;
+  wrap.append(h, node);
+  return wrap;
+}
+
+function renderOutcome(note) {
+  const body = $("outcome-body");
+  body.replaceChildren();
+  if (!note) return;
+
+  const rec = note.recommendation;
+
+  const headline = document.createElement("div");
+  headline.className = "headline";
+  const badge = document.createElement("span");
+  badge.className = `urgency ${rec.urgency}`;
+  badge.textContent = rec.urgency;
+  const dept = document.createElement("span");
+  dept.className = "dept";
+  dept.textContent = rec.department;
+  headline.append(badge, dept);
+  body.append(headline);
+
+  if (rec.requires_human_review) {
+    const banner = document.createElement("div");
+    banner.className = "banner info";
+    banner.textContent = "A clinician will review this case before you are seen.";
+    body.append(banner);
+  }
+
+  if (note.reasoning.length) {
+    const box = document.createElement("div");
+    for (const r of note.reasoning) {
+      const row = document.createElement("div");
+      row.className = "reason";
+
+      const head = document.createElement("div");
+      const chip = document.createElement("span");
+      chip.className = "rule-chip";
+      chip.textContent = r.rule_id;
+      chip.onclick = () => showRule(r.rule_id);
+      head.append(chip, ` ${r.rationale}`);
+
+      const src = document.createElement("div");
+      src.className = "src";
+      src.textContent = r.source;
+
+      row.append(head, src);
+      box.append(row);
+    }
+    body.append(section("Why", box));
+  }
+
+  body.append(section("You told us", list(note.patient_reported)));
+  if (note.established_by_followup.length) {
+    body.append(section("Established by our questions", list(note.established_by_followup)));
+  }
+  if (note.recalled_from_records.length) {
+    body.append(section("From your previous visit", list(note.recalled_from_records)));
+  }
+  body.append(section("Still unknown", list(note.unknown, "unknown-list")));
+
+  $("outcome").hidden = false;
+  $("outcome").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+refreshMode();
 </script>
 </body>
 </html>

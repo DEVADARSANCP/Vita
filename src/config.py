@@ -58,7 +58,7 @@ class Settings:
     """
 
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-flash-latest"
+    gemini_model: str = "gemini-flash-lite-latest"
     embedding_model: str = "gemini-embedding-001"
 
     #: Outbound notification is dry-run unless this is explicitly turned on.
@@ -83,7 +83,7 @@ def load_settings() -> Settings:
     """Read configuration from the environment. Never raises."""
     return Settings(
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
-        gemini_model=os.getenv("VITA_GEMINI_MODEL", "gemini-flash-latest"),
+        gemini_model=os.getenv("VITA_GEMINI_MODEL", "gemini-flash-lite-latest"),
         embedding_model=os.getenv("VITA_EMBEDDING_MODEL", "gemini-embedding-001"),
         notify_enabled=_flag("VITA_NOTIFY_ENABLED"),
     )

@@ -8,3 +8,14 @@ python-multipart>=0.0.9
 # --- configuration and contracts ---------------------------------------
 pydantic>=2.9
 python-dotenv>=1.0
+
+# --- the only thing that goes over the network --------------------------
+# Gemini, for both the LLM calls and the embeddings (gemini-embedding-001).
+# Everything else - retrieval, storage, the rule engine - is local.
+google-genai>=1.0
+
+# --- local retrieval ----------------------------------------------------
+# Cosine similarity over a few hundred committed vectors. No FAISS, no Chroma:
+# at this corpus size an index costs more startup time than it saves, and it is
+# one more dependency that can fail on a machine we do not control.
+numpy>=1.26

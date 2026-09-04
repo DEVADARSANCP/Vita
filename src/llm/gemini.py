@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -47,7 +48,36 @@ MAX_ATTEMPTS = 2
 FAILURES_BEFORE_DEGRADED = 2
 
 #: Tried in order if the configured model is unavailable to the running key.
-MODEL_FALLBACKS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"]
+MODEL_FALLBACKS = ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.5-flash"]
+
+#: Longest we will wait out a rate limit before giving up on a call. A single
+#: request has 60 seconds, and the call itself needs some of them.
+MAX_RATE_LIMIT_WAIT = 22.0
+
+#: Rate limiting is not failure. On a free-tier key the quota is a handful of
+#: requests per minute, and an intake conversation is one call per patient
+#: message - so a judge clicking through a demo will meet it. The server says
+#: how long to wait; waiting and retrying keeps the conversation intact, where
+#: degrading immediately would drop the patient into keyword extraction over a
+#: delay measured in seconds.
+_RATE_LIMIT_TOKENS = ("429", "resource_exhausted", "rate limit", "quota")
+
+
+def _rate_limit_delay(exc: Exception) -> float | None:
+    """How long to wait for a rate limit, or None if this is not one.
+
+    Gemini returns the delay it wants in the error body ("retryDelay": "17s").
+    Honouring it is better than a fixed backoff: too short and the retry is
+    wasted, too long and the request budget is gone.
+    """
+    message = str(exc).lower()
+    if not any(token in message for token in _RATE_LIMIT_TOKENS):
+        return None
+
+    match = re.search(r"'retrydelay':\s*'(\d+(?:\.\d+)?)s'", message)
+    if match:
+        return min(float(match.group(1)) + 1.0, MAX_RATE_LIMIT_WAIT)
+    return min(10.0, MAX_RATE_LIMIT_WAIT)
 
 
 @dataclass
@@ -210,6 +240,13 @@ class GeminiClient:
             except Exception as exc:  # noqa: BLE001 - any failure degrades
                 last_error = f"{type(exc).__name__}: {exc}"
                 logger.warning("Gemini attempt %d failed: %s", attempt, last_error)
+
+                wait = _rate_limit_delay(exc)
+                if wait is not None and attempt < MAX_ATTEMPTS:
+                    logger.info("rate limited; waiting %.1fs before retrying", wait)
+                    time.sleep(wait)
+                    continue
+
                 if attempt == 1 and self._try_fallback_model(exc):
                     continue
 

@@ -322,7 +322,19 @@ def decide(
     # same as having found it. Adopting the potential rule's own level would
     # mark every unfinished chest pain CRITICAL, and a system where everything
     # is critical has stopped triaging.
-    unresolved = [e for e in potential if e.rule.urgency.rank >= ESCALATION_FLOOR.rank]
+    #
+    # `e.satisfied` is the qualifier that keeps this usable. A rule with nothing
+    # established yet is not a live possibility - it is a question nobody got
+    # round to. Without the check, GEN-03 (pregnant AND in significant pain)
+    # sits potential on every case where neither was asked, and a routine fever
+    # comes out HIGH. Requiring at least one condition already TRUE means the
+    # floor applies to possibilities the facts actually point at: chest pain
+    # established, breathing unknown, CP-01 open.
+    unresolved = [
+        e
+        for e in potential
+        if e.rule.urgency.rank >= ESCALATION_FLOOR.rank and e.satisfied
+    ]
     if unresolved and final:
         strongest_open = max(unresolved, key=lambda e: e.rule.urgency.rank)
         if ESCALATION_FLOOR.rank > urgency.rank:

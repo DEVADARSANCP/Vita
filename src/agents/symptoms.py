@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ..core.schema import Fact, Tri
+from ..core.schema import Complaint, Fact, Tri
 from .base import AgentContext, ExtractionAgent
 from .fields import EVIDENCE_SUFFIX, make_fact, read_tri, tri_property, with_evidence
 
@@ -65,6 +65,17 @@ SYMPTOM_FACTS = {
     "testicular_pain",
     "prior_visit_72h_same_complaint",
 }
+
+#: The symptom that anchors each complaint's rule set. Requested whenever the
+#: complaint is still unsettled, so the patient's opening description is read
+#: for what it plainly says before any question is put to them.
+ANCHOR_FACTS = [
+    "chest_pain",
+    "breathing_difficulty",
+    "abdominal_pain",
+    "injury",
+    "fever",
+]
 
 #: Cap on how many symptoms are requested at once. Beyond this the model starts
 #: answering the list rather than reading the message, and accuracy on the facts
@@ -129,14 +140,23 @@ class SymptomAgent(ExtractionAgent):
         Wanted facts come first - those are what the rule engine is blocked on -
         followed by anything else this complaint's rules could use, so a patient
         who volunteers something unprompted is still heard.
+
+        Before a complaint is settled there is no rule set to draw from, and
+        asking for nothing means the opening description goes unmined: a patient
+        who wrote "I've had a fever since yesterday" gets asked, as their first
+        question, whether they have a fever. So while the complaint is
+        undetermined the anchor symptoms are always requested.
         """
         wanted = [f for f in self.provides if f in ctx.wanted]
 
         relevant: list[str] = []
-        for rule in ctx.kb.rules_for(ctx.complaint):
-            for fact in rule.required_facts:
-                if fact in self.provides and fact not in wanted and fact not in relevant:
-                    relevant.append(fact)
+        if ctx.complaint in (Complaint.UNDETERMINED, Complaint.OUT_OF_SCOPE):
+            relevant = [f for f in ANCHOR_FACTS if f not in wanted]
+        else:
+            for rule in ctx.kb.rules_for(ctx.complaint):
+                for fact in rule.required_facts:
+                    if fact in self.provides and fact not in wanted and fact not in relevant:
+                        relevant.append(fact)
 
         ordered = wanted + relevant
         return ordered[:MAX_FIELDS_PER_TURN]

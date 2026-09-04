@@ -282,6 +282,16 @@ class IntakeOrchestrator:
             case.record_all(facts)
             result.facts_added.extend(f.key for f in facts)
 
+        # Backstop. VITA asked a direct question and the patient answered "no";
+        # if the extraction did not come back with it, record it here. Observed
+        # in practice - the same one-word reply is read on one turn and returned
+        # as unknown on the next, and the visible symptom is VITA asking the
+        # identical question twice in a row. A plain yes or no to a question we
+        # posed is not a judgement call, so it does not need a model to be
+        # reliable.
+        if ctx.asked_about and not case.facts.get(ctx.asked_about, _MISSING).is_known:
+            self._fallback_answer(case, ctx, result)
+
     def _fallback_answer(self, case: Case, ctx: AgentContext, result: TurnResult) -> None:
         """Read a plain yes or no when the model is unavailable.
 
@@ -299,15 +309,20 @@ class IntakeOrchestrator:
         if answer is Tri.UNKNOWN:
             return
 
+        # When the model is up, a direct answer read this way is a genuine
+        # follow-up answer and belongs in that section of the note. When it is
+        # down, the same reading is all the comprehension there was, and the
+        # note has to say so.
+        degraded = self.llm.mode is not SystemMode.FULL
         case.record(
             Fact(
                 key=ctx.asked_about,
                 value=answer,
-                source=FactSource.DEGRADED_EXTRACTION,
+                source=FactSource.DEGRADED_EXTRACTION if degraded else FactSource.FOLLOWUP_ANSWER,
                 turn=ctx.turn,
                 verbatim=ctx.message,
                 language=case.language,
-                confidence=0.6,
+                confidence=0.6 if degraded else 0.95,
                 agent="fallback",
             )
         )
@@ -319,10 +334,18 @@ class IntakeOrchestrator:
         if case.pending_fact:
             question = self.kb.question(case.pending_fact)
             if question:
+                # Framed as "this is their answer" the model reads the message
+                # only against the pending question and drops anything else in
+                # it. A patient asked about neck stiffness who replies "about
+                # 101" has not answered, but they have just given a temperature,
+                # and losing it costs two more turns.
                 parts.append(
                     "VITA asked the patient this question:\n"
                     f"  {question.text}\n"
-                    "The message below is their answer to it."
+                    "Their message may answer it, may answer something else, or "
+                    "may volunteer information nobody asked for. Record whatever "
+                    "it actually establishes, and leave the question above "
+                    "unknown if they did not address it."
                 )
 
         recent = [t for t in case.turns[:-1] if t.role == "patient"][-3:]

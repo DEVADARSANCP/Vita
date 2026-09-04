@@ -64,6 +64,11 @@
 
 * { box-sizing: border-box; }
 
+/* An element with the hidden attribute must stay hidden even when a rule
+ * below gives it a display value. Without this a count badge set to
+ * hidden still renders, which is how a red '0' ends up on screen. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);

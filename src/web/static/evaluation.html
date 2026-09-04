@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VITA — Evaluation</title>
+<title>VITA — Self-check</title>
 <link rel="stylesheet" href="/static/vita.css">
 <style>
   .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 20px 48px; }
@@ -40,7 +40,7 @@
 <body>
 
 <div class="topbar">
-  <div class="brand">VITA <small>Evaluation</small></div>
+  <div class="brand">VITA <small>Self-check</small></div>
   <div class="spacer"></div>
   <a class="navlink" href="/dashboard">← Dashboard</a>
   <a class="navlink" href="/">Patient view</a>
@@ -48,32 +48,37 @@
 
 <div class="wrap">
 
-  <div class="panel" style="padding:16px;margin-bottom:18px">
-    <p class="small muted" style="margin:0 0 6px">
-      VITA carries its own exam paper. These scenarios run through the real
-      code — the same rule engine, the same intake loop — so this page is a
-      result, not a claim.
+  <div class="panel" style="padding:18px;margin-bottom:18px">
+    <h2 style="margin:0 0 8px;font-size:19px;letter-spacing:-0.01em">Is the triage actually getting it right?</h2>
+    <p style="margin:0 0 12px;color:var(--ink-2);line-height:1.6">
+      This page checks the system against itself. Thirty-four made-up patients,
+      each with a known correct answer written by hand, are pushed through the
+      real triage rules — the same code a live patient goes through. Press the
+      button and you see how many it got right.
+    </p>
+    <p style="margin:0 0 6px;color:var(--ink-2);line-height:1.6">
+      <strong>Watch the first number.</strong> Under-triage means a patient was
+      graded <em>less</em> urgent than they should have been — sent home when they
+      should have stayed. That is the only mistake here that can hurt someone,
+      and it must be zero.
     </p>
     <p class="small muted" style="margin:0">
-      The number that matters is <strong>under-triage</strong>, and it must be
-      zero. Over-triage costs a clinician a few minutes; under-triage sends home
-      a patient who should have stayed, and in the record it looks exactly like
-      a case that was genuinely low risk. Escalations are correct behaviour, not
-      failures.
+      Over-triage costs a doctor a few minutes. Escalations are the system doing
+      its job — handing a case to a person — not failures.
     </p>
   </div>
 
   <div class="headline" id="headline"></div>
 
   <div class="controls">
-    <button class="primary" id="run">Run evaluation</button>
-    <button id="run-full">Include conversation tier</button>
+    <button class="primary" id="run">Run the check</button>
+    <button id="run-full">Also test the live chat (slow)</button>
     <span class="tiny muted" id="timing"></span>
   </div>
   <div class="tiny muted">
-    The deterministic tier uses no model and finishes in milliseconds. The
-    conversation tier calls Gemini once per turn, so on a free-tier key it is
-    slow and consumes quota — which is why it is opt-in.
+    The main run uses no AI at all — it is pure rules, so it finishes instantly
+    and costs nothing. The second button also runs scripted patients through the
+    live chat, which takes a few minutes and uses your API quota.
   </div>
 
   <div class="cat" id="categories"></div>
@@ -132,11 +137,11 @@ function render(report) {
 
   const head = $("headline");
   head.replaceChildren();
-  stat(head, h.under_triaged, "Under-triaged", "graded below what was expected",
+  stat(head, h.under_triaged, "Sent home too easily", "graded less urgent than they should be",
        { primary: true, bad: h.under_triaged > 0 });
-  stat(head, `${h.passed}/${h.total}`, "Passed", "");
-  stat(head, h.over_triaged, "Over-triaged", "costs time, not safety");
-  stat(head, h.escalated, "Escalated", "handed to a clinician, as intended");
+  stat(head, `${h.passed}/${h.total}`, "Got it right", "matched the hand-written answer");
+  stat(head, h.over_triaged, "Treated too cautiously", "costs a doctor time, not safety");
+  stat(head, h.escalated, "Handed to a person", "the system knowing its limits");
 
   const cats = $("categories");
   cats.replaceChildren();

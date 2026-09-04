@@ -108,6 +108,7 @@ class VitaServices:
             "memory": self.memory.status(),
             "mcp": self.mcp.status(),
             "tools": self.tools.names(),
+            "departments": [d.as_dict() for d in self.hospital.departments],
             "queue": self.cases.counts(),
             "requests": self.requests.counts(),
             "notifications": {

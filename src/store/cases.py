@@ -89,7 +89,23 @@ class CaseStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
+        self._resume_numbering()
         logger.info("case store ready at %s", self.path)
+
+    def _resume_numbering(self) -> None:
+        """Pick up case numbering where the stored cases left off."""
+        from ..core.case import reset_case_numbering
+
+        try:
+            rows = self._conn.execute("SELECT case_id FROM cases").fetchall()
+        except sqlite3.Error:
+            return
+        highest = 0
+        for row in rows:
+            token = str(row["case_id"]).rsplit("-", 1)[-1]
+            if token.isdigit():
+                highest = max(highest, int(token))
+        reset_case_numbering(highest + 1)
 
     def close(self) -> None:
         with self._lock:

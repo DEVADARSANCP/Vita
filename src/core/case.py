@@ -19,7 +19,7 @@ what is still open, and hands all three to the rule engine.
 
 from __future__ import annotations
 
-import uuid
+import itertools
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -40,8 +40,23 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+#: Set by the case store at startup so ids continue from what is already saved.
+_counter = itertools.count(1)
+
+
+def reset_case_numbering(start: int) -> None:
+    """Continue numbering from an existing store rather than restarting at 1."""
+    global _counter
+    _counter = itertools.count(max(1, start))
+
+
 def new_case_id() -> str:
-    return f"VITA-{uuid.uuid4().hex[:6].upper()}"
+    """A short, sayable id.
+
+    Hex ids like VITA-AB2B23 are unambiguous and unreadable. Somebody reading a
+    queue aloud says "case seven", so that is what the id should be.
+    """
+    return f"C-{next(_counter)}"
 
 
 class CaseStatus(str, Enum):

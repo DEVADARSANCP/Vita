@@ -1,15 +1,18 @@
 """
-Application wiring — one object that owns everything with a lifetime.
+Application wiring — one object owning everything with a lifetime.
 
-Built once at startup and handed to the request handlers. The endpoints stay
-thin because all the sequencing lives here and in the orchestrator, which means
-the interesting behaviour is testable without going through HTTP.
+Built once at startup and handed to the request handlers, so sequencing lives
+here and in the planner rather than in HTTP endpoints.
 
-The startup ordering matters and is deliberate. The knowledge base loads first
-and is allowed to fail loudly: a VITA with no rules cannot triage anybody, and
-coming up anyway to serve wrong answers would be worse than not coming up. The
-Gemini client is built next and is *not* allowed to fail - a missing key
-produces a client that reports OFFLINE, because the port has to open either way.
+Startup order is deliberate. The knowledge base loads first and is allowed to
+fail loudly: a VITA with no rules cannot triage anybody, and coming up anyway to
+serve wrong answers is worse than not coming up. Everything after it fails
+quietly and reports itself - a missing Gemini key, an unopenable memory store,
+an MCP session that will not start. Each costs a capability; none is a reason to
+leave port 8000 closed.
+
+The MCP session opens last, because the tool layer it publishes reaches back
+into everything above it.
 """
 
 from __future__ import annotations
@@ -17,36 +20,32 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ..agents.base import AgentRegistry
-from ..agents.complaint import ComplaintAgent
-from ..agents.history import HistoryAgent
 from ..agents.red_flag import RedFlagAgent, verify_coverage
-from ..agents.symptoms import SymptomAgent
-from ..agents.timeline import TimelineAgent
-from ..agents.vitals import VitalsAgent
 from ..config import Settings, SystemMode, load_settings
 from ..core.case import Case, CaseStatus
 from ..core.knowledge import KnowledgeBase, load_knowledge_base
 from ..core.note import build_note, render_text
-from ..core.schema import Complaint, Fact, FactSource, Tri, Urgency
+from ..core.patient import Patient
+from ..core.requests import Request, RequestKind
+from ..core.schema import Urgency
 from ..llm.gemini import GeminiClient
 from ..llm.phrasing import Phraser
-from ..orchestrator.intake import IntakeOrchestrator, TurnResult
+from ..mcp_bridge import McpBridge
+from ..memory.palace import KIND_FACT, KIND_OUTCOME, KIND_VISIT, PatientMemory
+from ..orchestrator.planner import PlannerTurn, TriagePlanner
 from ..rag.retriever import Retriever
 from ..store.cases import CaseStore
 from ..store.hospital import HospitalDirectory
-from ..tools import Tier
-from .ambulance import AmbulanceService
+from ..store.requests import RequestStore
+from ..tools import ToolLayer
+from .ambulance import AmbulanceError, AmbulanceService
 from .notify import Notifier
 
 logger = logging.getLogger(__name__)
 
-#: Window for the re-presentation rule. A patient back inside this with the same
-#: unresolved complaint is reviewed by a clinician whatever else the rules say.
-RETURN_WINDOW_HOURS = 72
-
-#: Urgency at or above which a clinician is notified directly rather than only
-#: through the dashboard.
+#: Urgency at or above which a notification request is raised automatically,
+#: without the planner having to think of it. Below that, notifying is a
+#: judgement, and judgements go through approval.
 NOTIFY_AT = Urgency.HIGH
 
 
@@ -59,38 +58,38 @@ class VitaServices:
         # Fails loudly on purpose. No rules means no triage.
         self.kb: KnowledgeBase = load_knowledge_base()
 
-        self.registry = AgentRegistry()
-        red_flag = RedFlagAgent()
-        for agent in (
-            ComplaintAgent(),
-            red_flag,
-            SymptomAgent(),
-            TimelineAgent(),
-            VitalsAgent(),
-            HistoryAgent(),
-        ):
-            self.registry.register(agent)
-        verify_coverage(red_flag, self.kb.red_flags)
-
-        # Never fails. A missing key yields a client that reports OFFLINE.
+        # Never fails. A missing key yields a client reporting OFFLINE.
         self.llm = GeminiClient(self.settings)
         self.phraser = Phraser(self.llm)
         self.retriever = Retriever(self.llm)
-        self.orchestrator = IntakeOrchestrator(
-            self.kb, self.registry, self.llm, self.phraser, self.retriever
-        )
+        self.memory = PatientMemory(self.llm)
 
         self.cases = CaseStore()
+        self.requests = RequestStore()
         self.hospital = HospitalDirectory()
         self.notifier = Notifier()
         self.ambulance = AmbulanceService()
 
-        # Built last: the tool layer reaches back into everything above it.
-        from ..tools import ToolLayer
+        self.red_flag_agent = RedFlagAgent()
+        verify_coverage(self.red_flag_agent, self.kb.red_flags)
 
+        # The tool layer, then an MCP session over it. The planner reaches every
+        # capability through the protocol, never by calling these objects.
         self.tools = ToolLayer(self)
+        self.mcp = McpBridge(self._build_mcp_server)
+        self.planner = TriagePlanner(
+            self.kb, self.llm, self.mcp, self.red_flag_agent, self.phraser
+        )
 
         self._live: dict[str, Case] = {}
+
+    def _build_mcp_server(self) -> Any:
+        from ..mcp_server import build_server
+
+        return build_server(self.tools)
+
+    def close(self) -> None:
+        self.mcp.close()
 
     # -- status ----------------------------------------------------------
 
@@ -104,104 +103,60 @@ class VitaServices:
             "llm": self.llm.status(),
             "knowledge": self.kb.summary(),
             "retrieval": self.retriever.status(),
-            "agents": self.registry.describe(),
+            "memory": self.memory.status(),
+            "mcp": self.mcp.status(),
+            "tools": self.tools.names(),
             "queue": self.cases.counts(),
+            "requests": self.requests.counts(),
             "notifications": {
                 "dry_run": not self.settings.notify_enabled,
                 "sent": len(self.notifier.outbox),
             },
-            "tools": {
-                "retrieval": self.tools.names(tier=Tier.RETRIEVAL),
-                "decision": self.tools.names(tier=Tier.DECISION),
-                "note": (
-                    "Decision tools are reachable over MCP by a deliberate client "
-                    "but are never advertised to the conversation model."
-                ),
-            },
-            "ambulance": {"requests": len(self.ambulance.requests)},
         }
 
     # -- intake ----------------------------------------------------------
 
-    def start_case(self, language: str = "en", *, synthetic: bool = False) -> Case:
-        case = Case(language=language, synthetic=synthetic)
+    def start_case(self, name: str = "", language: str = "en", *, synthetic: bool = False) -> Case:
+        """Open a case for a named patient.
+
+        The name is the whole of identity, and it is what links this visit to
+        the last one - which is what makes memory and history worth having.
+        """
+        patient = Patient.from_name(name)
+        case = Case(
+            language=language,
+            synthetic=synthetic,
+            patient_id=patient.patient_id,
+            patient_name=patient.name,
+        )
         self._live[case.case_id] = case
         self.cases.save(case)
-        self.cases.audit(case.case_id, "case_opened", detail=f"language={language}")
-        logger.info("case %s opened", case.case_id)
+        self.cases.audit(
+            case.case_id,
+            "case_opened",
+            detail=f"patient={patient.name or 'anonymous'} language={language}",
+        )
+        logger.info("case %s opened for %s", case.case_id, patient.name or "anonymous")
         return case
 
     def get_case(self, case_id: str) -> Case | None:
         return self._live.get(case_id) or self.cases.get(case_id)
 
-    def message(self, case_id: str, text: str) -> TurnResult | None:
-        """Run one conversational turn and persist the result."""
+    def message(self, case_id: str, text: str) -> PlannerTurn | None:
         case = self.get_case(case_id)
         if case is None:
             return None
         self._live[case.case_id] = case
 
-        self._recall_prior_visit(case)
-        result = self.orchestrator.handle(case, text)
-
+        result = self.planner.handle(case, text)
         self.cases.save(case)
+
         if result.red_flags:
-            self.cases.audit(
-                case.case_id, "red_flags_matched", detail=", ".join(result.red_flags)
-            )
+            self.cases.audit(case.case_id, "red_flags_matched", detail=", ".join(result.red_flags))
         if result.finished:
             self._on_finished(case)
 
         return result
-
-    def _recall_prior_visit(self, case: Case) -> None:
-        """Check the record for a recent visit with the same complaint.
-
-        This is the one place VITA remembers anything across cases, and it earns
-        its place by feeding a rule rather than by decorating the note. A patient
-        back within 72 hours with an unresolved complaint is a recognised marker
-        of a missed or deteriorating condition, and no amount of skill at reading
-        this conversation would surface it.
-        """
-        if case.complaint in (Complaint.UNDETERMINED, Complaint.OUT_OF_SCOPE):
-            return
-        if "prior_visit_72h_same_complaint" in case.facts:
-            return
-
-        prior = self.cases.find_prior_visit(
-            complaint=case.complaint.value,
-            within_hours=RETURN_WINDOW_HOURS,
-            exclude=case.case_id,
-        )
-        if prior is None:
-            return
-
-        logger.info(
-            "case %s: prior visit %s with same complaint %.1fh ago",
-            case.case_id,
-            prior["case_id"],
-            prior["hours_ago"],
-        )
-        case.record(
-            Fact(
-                key="prior_visit_72h_same_complaint",
-                value=Tri.TRUE,
-                source=FactSource.MEMORY_RECALL,
-                turn=case.turn_number,
-                verbatim=(
-                    f"case {prior['case_id']}, {prior['hours_ago']} hours ago, "
-                    f"same complaint, triaged {prior['urgency'] or 'unrecorded'}"
-                ),
-                language=case.language,
-                confidence=1.0,
-                agent="memory:case_store",
-            )
-        )
-        self.cases.audit(
-            case.case_id,
-            "prior_visit_recalled",
-            detail=f"{prior['case_id']} {prior['hours_ago']}h ago",
-        )
 
     # -- closing ---------------------------------------------------------
 
@@ -219,58 +174,224 @@ class VitaServices:
                 f"mode={case.decided_in_mode.value}"
             ),
         )
-
         if decision.requires_human_review:
             self.cases.audit(
-                case.case_id,
-                "escalated",
+                case.case_id, "escalated",
                 detail=", ".join(r.value for r in decision.escalation_reasons),
             )
 
-        if decision.urgency.rank >= NOTIFY_AT.rank or decision.requires_human_review:
-            self._notify(case)
+        self._remember(case)
 
-    def _notify(self, case: Case) -> None:
-        """Notify the on-call clinician for the routed department.
+        if decision.urgency.rank >= NOTIFY_AT.rank:
+            already = [
+                r for r in self.requests.list(case_id=case.case_id)
+                if r.kind is RequestKind.NOTIFY_DOCTOR
+            ]
+            if not already:
+                doctor = self.hospital.on_call_for(decision.department)
+                self.requests.add(
+                    Request.create(
+                        case_id=case.case_id,
+                        patient_id=case.patient_id,
+                        kind=RequestKind.NOTIFY_DOCTOR,
+                        summary=(
+                            f"Notify {doctor.name if doctor else 'on-call clinician'} "
+                            f"({decision.department})"
+                        ),
+                        reasoning=(
+                            f"Triage graded this {decision.urgency.value} on "
+                            f"{', '.join(decision.cited_rules) or 'no matched rule'}. "
+                            "Policy POL-09 requires the on-call clinician to be told "
+                            "directly at this urgency."
+                        ),
+                        payload={
+                            "department": decision.department,
+                            "doctor": doctor.name if doctor else "",
+                        },
+                        evidence=[f"rule {r}" for r in decision.cited_rules],
+                    )
+                )
 
-        The recipient comes from the hospital directory. It is not a parameter,
-        not a model output, and not anything the patient typed.
+    def _remember(self, case: Case) -> None:
+        """Write the few things worth recalling at this patient's next visit."""
+        if not case.patient_id or case.synthetic or case.decision is None:
+            return
+
+        rules = case.decision.cited_rules
+        self.memory.remember(
+            patient_id=case.patient_id,
+            case_id=case.case_id,
+            kind=KIND_VISIT,
+            text=(
+                f"Visit {case.created_at[:10]}: {case.complaint.value.replace('_', ' ')}, "
+                f"triaged {case.decision.urgency.value}, routed to {case.decision.department}."
+                + (f" Rules: {', '.join(rules)}." if rules else "")
+            ),
+        )
+
+        if case.clinical_impression:
+            self.memory.remember(
+                patient_id=case.patient_id,
+                case_id=case.case_id,
+                kind=KIND_OUTCOME,
+                text=f"Impression at {case.created_at[:10]} visit: {case.clinical_impression}",
+            )
+
+        # Durable facts outlive the visit. A patient who told us once that they
+        # take an anticoagulant should not have to remember to say so next time.
+        for key in ("on_anticoagulants", "immunocompromised", "known_asthma", "known_cardiac_history"):
+            fact = case.facts.get(key)
+            if fact is not None and fact.is_known and fact.tri.value == "true":
+                self.memory.remember(
+                    patient_id=case.patient_id,
+                    case_id=case.case_id,
+                    kind=KIND_FACT,
+                    text=f"{case.patient_name or 'Patient'}: {key.replace('_', ' ')} confirmed.",
+                )
+
+    # -- approvals -------------------------------------------------------
+
+    def decide_request(
+        self, request_id: str, *, approved: bool, by: str, note: str = "", room_id: str = ""
+    ) -> dict[str, Any]:
+        """Approve or reject a planner request, and carry out what was approved.
+
+        The only path by which anything the planner wanted actually happens.
+        Rejections are recorded rather than discarded - the proposals a hospital
+        turned down are the interesting ones when anybody later asks how far the
+        system was trusted.
         """
-        decision = case.decision
-        if decision is None:
-            return
+        request = self.requests.decide(request_id, approved=approved, by=by, note=note)
+        if request is None:
+            return {"error": "unknown request, or it has already been decided"}
 
-        doctor = self.hospital.on_call_for(decision.department)
+        self.cases.audit(
+            request.case_id,
+            "request_approved" if approved else "request_rejected",
+            actor=by,
+            detail=f"{request.kind.value}: {note or '(no note)'}",
+        )
+        if not approved:
+            return {"request": request.as_dict(), "carried_out": None}
+
+        return {
+            "request": request.as_dict(),
+            "carried_out": self._carry_out(request, by=by, room_id=room_id),
+        }
+
+    def _carry_out(self, request: Request, *, by: str, room_id: str = "") -> dict[str, Any]:
+        case = self.get_case(request.case_id)
+        if case is None:
+            return {"error": f"no case {request.case_id}"}
+
+        if request.kind is RequestKind.NOTIFY_DOCTOR:
+            return self._notify(case, request.payload.get("department", ""))
+
+        if request.kind is RequestKind.ADMIT_PATIENT:
+            return self._admit(case, request, by=by, room_id=room_id)
+
+        if request.kind is RequestKind.REQUEST_AMBULANCE:
+            try:
+                created = self.ambulance.create(
+                    case_id=case.case_id,
+                    urgency=case.effective_urgency,
+                    pickup_location=request.payload.get("pickup_location") or "confirmed at the desk",
+                    confirmed_by=by,
+                )
+            except AmbulanceError as exc:
+                return {"error": str(exc)}
+            return {"ambulance": created.as_dict()}
+
+        if request.kind is RequestKind.RAISE_URGENCY:
+            level = request.payload.get("urgency", "")
+            case.override_urgency = level
+            case.override_reason = f"planner request approved: {request.reasoning[:160]}"
+            case.override_by = by
+            case.override_at = request.decided_at
+            self.cases.save(case)
+            return {"urgency": level}
+
+        if request.kind is RequestKind.REFER_DEPARTMENT:
+            department = request.payload.get("department", "")
+            self.cases.audit(case.case_id, "referred", actor=by, detail=department)
+            return self._notify(case, department)
+
+        return {"error": f"no handler for {request.kind.value}"}
+
+    def _admit(self, case: Case, request: Request, *, by: str, room_id: str) -> dict[str, Any]:
+        """Admit a patient to a room the approving clinician chose."""
+        if not room_id:
+            return {"error": "a room must be chosen before admitting; VITA does not pick one"}
+
+        room = self.hospital.room(room_id)
+        if room is None:
+            return {"error": f"no room {room_id!r}"}
+        if room.room_id in self.requests.occupied_rooms():
+            return {"error": f"room {room.room_id} is already occupied"}
+
+        record = self.requests.admit(
+            admission_id=f"ADM-{request.request_id[4:]}",
+            case_id=case.case_id,
+            patient_id=case.patient_id,
+            patient_name=case.patient_name,
+            room_id=room.room_id,
+            department=room.department,
+            reason=request.reasoning,
+            admitted_by=by,
+        )
+        self.cases.audit(case.case_id, "admitted", actor=by, detail=f"room {room.room_id}")
+        self.memory.remember(
+            patient_id=case.patient_id,
+            case_id=case.case_id,
+            kind=KIND_OUTCOME,
+            text=f"Admitted to room {room.room_id} ({room.department}) on {record['admitted_at'][:10]}.",
+        )
+        return {"admission": record, "notification": self._notify(case, room.department, admission=record)}
+
+    def _notify(self, case: Case, department: str, admission: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Send the triage note to the on-call clinician for a department.
+
+        The recipient comes from the roster. Not a parameter, not model output,
+        and not anything a patient typed.
+        """
+        target = department or (case.decision.department if case.decision else "")
+        doctor = self.hospital.on_call_for(target)
         if doctor is None:
-            logger.error("no on-call doctor available for %s", decision.department)
-            self.cases.audit(case.case_id, "notification_skipped", detail="no on-call doctor")
-            return
+            self.cases.audit(case.case_id, "notification_skipped", detail="no on-call clinician")
+            return {"error": "no on-call clinician for that department"}
 
         note = build_note(case, self.kb)
+        body = render_text(note)
+        if case.clinical_impression:
+            body += (
+                "\n\nAI IMPRESSION - not a diagnosis. Generated by the intake assistant\n"
+                "for your consideration, and overridable from the dashboard.\n"
+                f"  {case.clinical_impression}\n"
+            )
+        if admission:
+            body += (
+                "\n\nADMISSION\n"
+                f"  Room:        {admission['room_id']} ({admission['department']})\n"
+                f"  Admitted by: {admission['admitted_by']}\n"
+                f"  Reason:      {admission['reason']}\n"
+            )
+
         notification = self.notifier.notify_clinician(
             case_id=case.case_id,
-            urgency=decision.urgency.value,
-            department=decision.department,
-            note_text=render_text(note),
-            recipient=doctor.email,
+            urgency=case.effective_urgency or "UNKNOWN",
+            department=target,
+            note_text=body,
+            recipient=doctor.address,
             recipient_name=doctor.name,
-            cited_rules=decision.cited_rules,
-            unknowns=decision.unknowns,
+            cited_rules=case.decision.cited_rules if case.decision else [],
+            unknowns=case.decision.unknowns if case.decision else [],
         )
-        self.cases.audit(
-            case.case_id, "clinician_notified", detail=notification.describe()
-        )
+        self.cases.audit(case.case_id, "clinician_notified", detail=notification.describe())
+        return {"notification": notification.as_dict()}
 
     # -- clinician actions -----------------------------------------------
 
     def override(self, case_id: str, urgency: str, reason: str, by: str) -> Case | None:
-        """Record a clinician's override of the system's recommendation.
-
-        Both values are kept. The dashboard shows what VITA recommended and what
-        the clinician decided, side by side, and the audit trail keeps the
-        reason. An override that replaced the original would make the system
-        look like it had agreed all along.
-        """
         case = self.get_case(case_id)
         if case is None:
             return None
@@ -290,13 +411,8 @@ class VitaServices:
         self._live[case.case_id] = case
         self.cases.save(case)
         self.cases.audit(
-            case.case_id,
-            "clinician_override",
-            actor=by,
-            detail=(
-                f"{case.decision.urgency.value if case.decision else '?'} -> "
-                f"{level.value}: {reason}"
-            ),
+            case.case_id, "clinician_override", actor=by,
+            detail=f"{case.decision.urgency.value if case.decision else '?'} -> {level.value}: {reason}",
         )
         return case
 
@@ -318,9 +434,16 @@ class VitaServices:
             return None
         note = build_note(case, self.kb)
         note["text"] = render_text(note)
+        note["clinical_impression"] = case.clinical_impression
         note["routing"] = self.hospital.routing_note(
             case.decision.department if case.decision else ""
         )
+        note["conversation"] = [t.as_dict() for t in case.turns]
         note["notifications"] = [n.as_dict() for n in self.notifier.for_case(case_id)]
+        note["requests"] = [r.as_dict() for r in self.requests.list(case_id=case_id)]
         note["audit"] = self.cases.trail(case_id)
+        note["patient"] = {"patient_id": case.patient_id, "name": case.patient_name}
+        note["memory"] = [
+            m.as_dict() for m in self.memory.recall(patient_id=case.patient_id, limit=6)
+        ]
         return note

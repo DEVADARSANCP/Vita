@@ -87,6 +87,11 @@ class Case:
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 
+    #: Who this case is about. A name is the whole of identity here - see
+    #: core/patient.py for why that is enough and where it falls short.
+    patient_id: str = ""
+    patient_name: str = ""
+
     language: str = "en"
     complaint: Complaint = Complaint.UNDETERMINED
     status: CaseStatus = CaseStatus.INTAKE
@@ -117,6 +122,19 @@ class Case:
     #: The scope classifier's verdict and its evidence, kept so a clinician can
     #: see why VITA declined to triage rather than only that it did.
     scope_verdict: dict[str, Any] = field(default_factory=dict)
+
+    #: One fingerprint of the triage state per turn, used to notice when the
+    #: conversation has stopped changing the outcome. Convergence, not a
+    #: question count, is what ends an intake.
+    state_history: list[str] = field(default_factory=list)
+
+    #: True once the patient has been invited to add anything else. Asked once,
+    #: when the picture has stabilised - never as a reflex after every question.
+    asked_anything_else: bool = False
+
+    #: The planner's reading of the case, for the clinician only. Never shown to
+    #: the patient, and clearly an AI impression rather than a diagnosis.
+    clinical_impression: str = ""
 
     #: Created by the evaluation harness rather than by a patient. Excluded
     #: from cross-visit recall, because otherwise every eval run leaves fever
@@ -248,6 +266,8 @@ class Case:
     def as_dict(self, *, full: bool = True) -> dict[str, Any]:
         summary = {
             "case_id": self.case_id,
+            "patient_id": self.patient_id,
+            "patient_name": self.patient_name,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "language": self.language,
@@ -262,6 +282,9 @@ class Case:
             "out_of_scope": self.out_of_scope,
             "scope_verdict": self.scope_verdict,
             "scope_uncertain": self.scope_uncertain,
+            "clinical_impression": self.clinical_impression,
+            "asked_anything_else": self.asked_anything_else,
+            "state_history": self.state_history,
             "synthetic": self.synthetic,
             "decided_in_mode": self.decided_in_mode.value,
             "overridden": bool(self.override_urgency),

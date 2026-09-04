@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "note": "Synthetic hospital operations data for demonstration. No real people, no real rosters. Capacity is shown to clinicians alongside the queue and is NEVER an input to the triage decision - a HIGH case stays HIGH when Emergency is full, and what changes is what the clinician is told, not what the patient is graded.",
+  "note": "Synthetic hospital operations data for demonstration. No real people, no real rosters. Capacity is shown to clinicians alongside the queue and is NEVER an input to the triage decision - a HIGH case stays HIGH when Emergency is full, and what changes is what the clinician is told, not what the patient is graded. Doctor email addresses are read from the environment (VITA_DOCTOR_EYE, VITA_DOCTOR_GENERAL) so no real address is ever committed.",
   "facility": {
     "name": "Vita General Hospital",
     "city": "Kochi",
@@ -62,18 +62,179 @@
       "open_hours": "24/7",
       "capacity": 4,
       "current_load": 1
+    },
+    {
+      "id": "OPH",
+      "name": "Ophthalmology",
+      "location": "Second floor, Block C",
+      "open_hours": "09:00-17:00",
+      "capacity": 6,
+      "current_load": 2
     }
   ],
   "doctors": [
-    {"id": "D-101", "name": "Dr. Anjali Menon", "specialty": "Emergency Medicine", "department": "Emergency", "on_call": true, "email": "anjali.menon@vita-demo.invalid"},
-    {"id": "D-102", "name": "Dr. Rahul Varma", "specialty": "Emergency Medicine", "department": "Emergency", "on_call": false, "email": "rahul.varma@vita-demo.invalid"},
-    {"id": "D-103", "name": "Dr. Priya Nair", "specialty": "Internal Medicine", "department": "General Medicine", "on_call": true, "email": "priya.nair@vita-demo.invalid"},
-    {"id": "D-104", "name": "Dr. Thomas Kurian", "specialty": "Internal Medicine", "department": "General Medicine", "on_call": false, "email": "thomas.kurian@vita-demo.invalid"},
-    {"id": "D-105", "name": "Dr. Meera Raghavan", "specialty": "Cardiology", "department": "Cardiology", "on_call": true, "email": "meera.raghavan@vita-demo.invalid"},
-    {"id": "D-106", "name": "Dr. Sanjay Pillai", "specialty": "Orthopaedic Surgery", "department": "Orthopaedics", "on_call": true, "email": "sanjay.pillai@vita-demo.invalid"},
-    {"id": "D-107", "name": "Dr. Fatima Hussain", "specialty": "Respiratory Medicine", "department": "Pulmonology", "on_call": true, "email": "fatima.hussain@vita-demo.invalid"},
-    {"id": "D-108", "name": "Dr. George Mathew", "specialty": "General Surgery", "department": "Surgery", "on_call": true, "email": "george.mathew@vita-demo.invalid"},
-    {"id": "D-109", "name": "Dr. Lakshmi Iyer", "specialty": "Triage Lead", "department": "Triage Desk", "on_call": true, "email": "lakshmi.iyer@vita-demo.invalid"},
-    {"id": "D-110", "name": "Dr. Arun Krishnan", "specialty": "Emergency Medicine", "department": "Emergency", "on_call": true, "email": "arun.krishnan@vita-demo.invalid"}
+    {
+      "id": "D-101",
+      "name": "Dr. Anjali Menon",
+      "specialty": "General Medicine",
+      "department": "General Medicine",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000101"
+    },
+    {
+      "id": "D-102",
+      "name": "Dr. Rahul Varma",
+      "specialty": "Ophthalmology",
+      "department": "Ophthalmology",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_EYE",
+      "email": "ophthalmology@vita-demo.invalid",
+      "phone": "+91-484-0000102"
+    },
+    {
+      "id": "D-103",
+      "name": "Dr. Priya Nair",
+      "specialty": "Emergency Medicine",
+      "department": "Emergency",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000103"
+    },
+    {
+      "id": "D-104",
+      "name": "Dr. Thomas Kurian",
+      "specialty": "Emergency Medicine",
+      "department": "Emergency",
+      "on_call": false,
+      "email": "",
+      "phone": "+91-484-0000104"
+    },
+    {
+      "id": "D-105",
+      "name": "Dr. Meera Raghavan",
+      "specialty": "Cardiology",
+      "department": "Cardiology",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000105"
+    },
+    {
+      "id": "D-106",
+      "name": "Dr. Sanjay Pillai",
+      "specialty": "Orthopaedic Surgery",
+      "department": "Orthopaedics",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000106"
+    },
+    {
+      "id": "D-107",
+      "name": "Dr. Fatima Hussain",
+      "specialty": "Respiratory Medicine",
+      "department": "Pulmonology",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000107"
+    },
+    {
+      "id": "D-108",
+      "name": "Dr. George Mathew",
+      "specialty": "General Surgery",
+      "department": "Surgery",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000108"
+    },
+    {
+      "id": "D-109",
+      "name": "Dr. Lakshmi Iyer",
+      "specialty": "Triage Lead",
+      "department": "Triage Desk",
+      "on_call": true,
+      "email_env": "VITA_DOCTOR_GENERAL",
+      "email": "general.medicine@vita-demo.invalid",
+      "phone": "+91-484-0000109"
+    }
+  ],
+  "rooms": [
+    {
+      "room_id": "A-101",
+      "department": "Emergency",
+      "type": "observation",
+      "beds": 1
+    },
+    {
+      "room_id": "A-102",
+      "department": "Emergency",
+      "type": "observation",
+      "beds": 1
+    },
+    {
+      "room_id": "A-103",
+      "department": "Emergency",
+      "type": "resuscitation",
+      "beds": 1
+    },
+    {
+      "room_id": "B-201",
+      "department": "General Medicine",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "B-202",
+      "department": "General Medicine",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "B-203",
+      "department": "General Medicine",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "B-204",
+      "department": "General Medicine",
+      "type": "private",
+      "beds": 1
+    },
+    {
+      "room_id": "C-301",
+      "department": "Orthopaedics",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "C-302",
+      "department": "Orthopaedics",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "D-401",
+      "department": "Surgery",
+      "type": "ward",
+      "beds": 1
+    },
+    {
+      "room_id": "D-402",
+      "department": "Surgery",
+      "type": "private",
+      "beds": 1
+    },
+    {
+      "room_id": "E-501",
+      "department": "Pulmonology",
+      "type": "ward",
+      "beds": 1
+    }
   ]
 }

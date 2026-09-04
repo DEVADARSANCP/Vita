@@ -36,7 +36,7 @@ from dotenv import load_dotenv
 
 from .config import APP_NAME, APP_VERSION
 from .services.container import VitaServices
-from .tools import Tier, ToolLayer
+from .tools import ToolLayer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +46,7 @@ logging.basicConfig(
 logger = logging.getLogger("vita.mcp")
 
 
-def build_server(tool_layer: ToolLayer, *, tier: Tier | None = None) -> Any:
+def build_server(tool_layer: ToolLayer) -> Any:
     """Wrap a tool layer in an MCP server."""
     import mcp.types as types
     from mcp.server import Server
@@ -61,7 +61,7 @@ def build_server(tool_layer: ToolLayer, *, tier: Tier | None = None) -> Any:
                 description=spec["description"],
                 inputSchema=spec["inputSchema"],
             )
-            for spec in tool_layer.list_tools(tier=tier)
+            for spec in tool_layer.list_tools()
         ]
 
     @server.call_tool()
@@ -74,18 +74,17 @@ def build_server(tool_layer: ToolLayer, *, tier: Tier | None = None) -> Any:
     return server
 
 
-async def _serve(tier: Tier | None) -> None:
+async def _serve() -> None:
     from mcp.server.stdio import stdio_server
 
     services = VitaServices()
     tool_layer = ToolLayer(services)
-    server = build_server(tool_layer, tier=tier)
+    server = build_server(tool_layer)
 
     print(
         f"[vita] MCP server ready - {APP_NAME} {APP_VERSION}, "
         f"mode={services.mode.value}, "
-        f"tools={len(tool_layer.list_tools(tier=tier))}"
-        f"{f' (tier={tier.value})' if tier else ' (all tiers)'}",
+        f"tools={len(tool_layer.list_tools())}",
         file=sys.stderr,
     )
 
@@ -95,23 +94,12 @@ async def _serve(tier: Tier | None) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="VITA MCP server")
-    parser.add_argument(
-        "--tier",
-        choices=[t.value for t in Tier],
-        default=None,
-        help=(
-            "Restrict the published surface. 'retrieval' publishes only tools "
-            "that read knowledge and state - the same narrow surface the "
-            "conversation model is given. Omit to publish everything."
-        ),
-    )
-    args = parser.parse_args()
-    tier = Tier(args.tier) if args.tier else None
+    parser.parse_args()
 
     load_dotenv()
 
     try:
-        asyncio.run(_serve(tier))
+        asyncio.run(_serve())
     except KeyboardInterrupt:
         print("[vita] shutting down", file=sys.stderr)
     except ImportError as exc:

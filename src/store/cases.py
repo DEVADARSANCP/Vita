@@ -49,12 +49,17 @@ CREATE TABLE IF NOT EXISTS cases (
     department    TEXT NOT NULL DEFAULT '',
     review        INTEGER NOT NULL DEFAULT 0,
     language      TEXT NOT NULL DEFAULT 'en',
+    patient_id    TEXT NOT NULL DEFAULT '',
+    patient_name  TEXT NOT NULL DEFAULT '',
     synthetic     INTEGER NOT NULL DEFAULT 0,
     document      TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_cases_queue
     ON cases (status, urgency_rank DESC, created_at ASC);
+
+CREATE INDEX IF NOT EXISTS idx_cases_patient
+    ON cases (patient_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS audit (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,13 +107,14 @@ class CaseStore:
                 """
                 INSERT INTO cases (case_id, created_at, updated_at, status, complaint,
                                    urgency, urgency_rank, department, review, language,
-                                   synthetic, document)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                                   patient_id, patient_name, synthetic, document)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(case_id) DO UPDATE SET
                     updated_at=excluded.updated_at, status=excluded.status,
                     complaint=excluded.complaint, urgency=excluded.urgency,
                     urgency_rank=excluded.urgency_rank, department=excluded.department,
                     review=excluded.review, language=excluded.language,
+                    patient_id=excluded.patient_id, patient_name=excluded.patient_name,
                     synthetic=excluded.synthetic, document=excluded.document
                 """,
                 (
@@ -122,6 +128,8 @@ class CaseStore:
                     case.decision.department if case.decision else "",
                     int(bool(case.decision and case.decision.requires_human_review)),
                     case.language,
+                    case.patient_id,
+                    case.patient_name,
                     int(case.synthetic),
                     document,
                 ),
@@ -172,6 +180,25 @@ class CaseStore:
 
         with self._lock:
             rows = self._conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def patient_visits(self, patient_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Every previous case for this patient, newest first.
+
+        The factual half of memory - what happened, when, how it was graded.
+        MemPalace holds the narrative half: whether it worked.
+        """
+        if not patient_id:
+            return []
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT case_id, created_at, complaint, urgency, department, status, review
+                FROM cases WHERE patient_id = ? AND synthetic = 0
+                ORDER BY created_at DESC LIMIT ?
+                """,
+                (patient_id, limit),
+            ).fetchall()
         return [dict(r) for r in rows]
 
     def trail(self, case_id: str) -> list[dict[str, Any]]:
@@ -279,6 +306,11 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
         )
         for t in (raw.get("turns") or [])
     ]
+    case.clinical_impression = raw.get("clinical_impression", "")
+    case.asked_anything_else = bool(raw.get("asked_anything_else", False))
+    case.state_history = list(raw.get("state_history") or [])
+    case.patient_id = raw.get("patient_id", "")
+    case.patient_name = raw.get("patient_name", "")
     case.synthetic = bool(raw.get("synthetic", False))
     case.pending_fact = raw.get("pending_fact", "")
     case.pending_rule = raw.get("pending_rule", "")

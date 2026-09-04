@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -68,7 +69,27 @@ class Doctor:
     specialty: str
     department: str
     on_call: bool
-    email: str
+    email: str = ""
+    phone: str = ""
+    email_env: str = ""
+
+    @property
+    def address(self) -> str:
+        """The address to notify, preferring the environment over the file.
+
+        Real addresses live in the environment and never in the repository. The
+        committed placeholder is what a judge sees, and it is deliberately a
+        .invalid domain so a misconfiguration cannot deliver anywhere real.
+        """
+        if self.email_env:
+            configured = os.getenv(self.email_env, "").strip()
+            if configured:
+                return configured
+        return self.email
+
+    @property
+    def address_is_real(self) -> bool:
+        return bool(self.address) and not self.address.endswith(".invalid")
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -77,7 +98,26 @@ class Doctor:
             "specialty": self.specialty,
             "department": self.department,
             "on_call": self.on_call,
-            "email": self.email,
+            "email": self.address,
+            "phone": self.phone,
+            "configured": self.address_is_real,
+        }
+
+
+@dataclass
+class Room:
+    room_id: str
+    department: str
+    type: str
+    beds: int = 1
+
+    def as_dict(self, *, occupied: bool = False) -> dict[str, Any]:
+        return {
+            "room_id": self.room_id,
+            "department": self.department,
+            "type": self.type,
+            "beds": self.beds,
+            "occupied": occupied,
         }
 
 
@@ -89,6 +129,7 @@ class HospitalDirectory:
         self.facility: dict[str, Any] = {}
         self.departments: list[Department] = []
         self.doctors: list[Doctor] = []
+        self.rooms: list[Room] = []
         self._load()
 
     def _load(self) -> None:
@@ -104,10 +145,14 @@ class HospitalDirectory:
         self.facility = raw.get("facility", {})
         self.departments = [Department(**d) for d in raw.get("departments", [])]
         self.doctors = [Doctor(**d) for d in raw.get("doctors", [])]
+        self.rooms = [Room(**r) for r in raw.get("rooms", [])]
+        configured = sum(1 for d in self.doctors if d.address_is_real)
         logger.info(
-            "hospital directory: %d departments, %d doctors",
+            "hospital directory: %d departments, %d doctors (%d with a real address), %d rooms",
             len(self.departments),
             len(self.doctors),
+            configured,
+            len(self.rooms),
         )
 
     # -- lookups ---------------------------------------------------------
@@ -131,6 +176,9 @@ class HospitalDirectory:
             return anyone[0]
         return None
 
+    def on_call_doctors(self) -> list[Doctor]:
+        return [d for d in self.doctors if d.on_call]
+
     def routing_note(self, department: str) -> str:
         """One line of operational context for the clinician reading the case."""
         dept = self.department(department)
@@ -145,9 +193,25 @@ class HospitalDirectory:
             )
         return f"{dept.name}: {dept.free} of {dept.capacity} free. {dept.location}."
 
-    def as_dict(self) -> dict[str, Any]:
+    def free_rooms(self, occupied: set[str], department: str = "") -> list[Room]:
+        """Rooms with nobody in them, optionally for one department.
+
+        Reported so a clinician can choose. VITA never picks a room: allocating
+        a bed is a decision with consequences for whoever is not given it.
+        """
+        rooms = [r for r in self.rooms if r.room_id not in occupied]
+        if department:
+            rooms = [r for r in rooms if r.department.lower() == department.lower()]
+        return rooms
+
+    def room(self, room_id: str) -> Room | None:
+        return next((r for r in self.rooms if r.room_id.lower() == room_id.lower()), None)
+
+    def as_dict(self, occupied: set[str] | None = None) -> dict[str, Any]:
+        taken = occupied or set()
         return {
             "facility": self.facility,
             "departments": [d.as_dict() for d in self.departments],
             "doctors": [d.as_dict() for d in self.doctors],
+            "rooms": [r.as_dict(occupied=r.room_id in taken) for r in self.rooms],
         }

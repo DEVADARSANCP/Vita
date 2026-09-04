@@ -31,7 +31,6 @@ from pydantic import BaseModel, Field
 
 from ..config import APP_NAME, APP_VERSION, Settings, load_settings
 from ..services.container import VitaServices
-from ..tools import Tier
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 class StartCaseRequest(BaseModel):
+    name: str = Field(default="", max_length=120)
     language: str = Field(default="en", max_length=16)
 
 
@@ -54,6 +54,13 @@ class OverrideRequest(BaseModel):
 
 class ReviewRequest(BaseModel):
     by: str = Field(default="clinician", max_length=120)
+
+
+class DecideRequestBody(BaseModel):
+    approved: bool = True
+    by: str = Field(default="clinician", max_length=120)
+    note: str = Field(default="", max_length=500)
+    room_id: str = Field(default="", max_length=32)
 
 
 class AmbulanceRequestBody(BaseModel):
@@ -122,10 +129,12 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
 
     @app.post("/api/cases")
     def start_case(body: StartCaseRequest) -> JSONResponse:
-        case = services.start_case(language=body.language)
+        case = services.start_case(name=body.name, language=body.language)
         return JSONResponse(
             {
                 "case_id": case.case_id,
+                "patient_id": case.patient_id,
+                "patient_name": case.patient_name,
                 "language": case.language,
                 "mode": services.mode.value,
                 "opening": services.phraser.say("opening", case.language),
@@ -142,12 +151,13 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             "case_id": case_id,
             "reply": result.reply,
             "finished": result.finished,
-            "asked_about": result.asked_about,
-            "driven_by_rule": result.driven_by_rule,
             "mode": result.mode.value,
+            "thinking": result.thinking,
+            "tools_called": list(dict.fromkeys(result.tools_called)),
+            "facts_recorded": sorted(set(result.facts_recorded)),
             "red_flags": result.red_flags,
+            "converged": result.converged,
             "notes": result.notes,
-            "facts_added": sorted(set(result.facts_added)),
         }
         if result.finished:
             payload["note"] = services.note(case_id)
@@ -195,6 +205,56 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
         if case is None:
             raise HTTPException(status_code=404, detail=f"no case {case_id}")
         return JSONResponse(case.as_dict(full=False))
+
+    # -- approval queue ----------------------------------------------------
+
+    @app.get("/api/requests")
+    def requests_queue(status: str = "", case_id: str = "") -> JSONResponse:
+        """What the planner has asked for and nobody has decided yet."""
+        items = services.requests.list(status=status, case_id=case_id)
+        return JSONResponse(
+            {
+                "counts": services.requests.counts(),
+                "requests": [r.as_dict() for r in items],
+            }
+        )
+
+    @app.post("/api/requests/{request_id}/decide")
+    def decide_request(request_id: str, body: DecideRequestBody) -> JSONResponse:
+        """Approve or reject. Approving is the only thing that makes it happen."""
+        result = services.decide_request(
+            request_id,
+            approved=body.approved,
+            by=body.by,
+            note=body.note,
+            room_id=body.room_id,
+        )
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return JSONResponse(result)
+
+    # -- admissions and rooms ----------------------------------------------
+
+    @app.get("/api/rooms")
+    def rooms(department: str = "") -> JSONResponse:
+        occupied = services.requests.occupied_rooms()
+        return JSONResponse(
+            {
+                "rooms": [
+                    r.as_dict(occupied=r.room_id in occupied)
+                    for r in services.hospital.rooms
+                    if not department or r.department.lower() == department.lower()
+                ],
+                "admissions": services.requests.admissions(active_only=True),
+            }
+        )
+
+    @app.get("/api/doctors")
+    def doctors(department: str = "") -> JSONResponse:
+        listing = services.hospital.doctors
+        if department:
+            listing = [d for d in listing if d.department.lower() == department.lower()]
+        return JSONResponse({"doctors": [d.as_dict() for d in listing]})
 
     # -- emergency transport ---------------------------------------------
 
@@ -256,13 +316,8 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
         """
         return JSONResponse(
             {
-                "retrieval": services.tools.list_tools(tier=Tier.RETRIEVAL),
-                "decision": services.tools.list_tools(tier=Tier.DECISION),
-                "note": (
-                    "Decision tools are reachable over MCP by a deliberate external "
-                    "client. They are never advertised to the conversation model, so "
-                    "no text a patient types can reach the triage decision."
-                ),
+                "transport": services.mcp.status(),
+                "tools": services.mcp.tools() or services.tools.list_tools(),
             }
         )
 

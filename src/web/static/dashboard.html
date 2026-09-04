@@ -129,6 +129,7 @@
   <div class="spacer"></div>
   <span class="tiny muted" id="notify-state"></span>
   <span class="mode" id="mode">…</span>
+  <a class="navlink" href="/reasoning">Case reasoning</a>
   <a class="navlink" href="/evaluation">Self-check</a>
   <a class="navlink" href="/">← Patient view</a>
 </div>
@@ -532,6 +533,11 @@ async function renderCase(d) {
     }
     d.append(section("Could not be ruled out", box));
   }
+
+  const walk = el("a", "navlink", "See how this was decided \u2192");
+  walk.href = `/reasoning?case=${encodeURIComponent(selected)}`;
+  walk.style.cssText = "display:inline-block;padding:0;margin-top:4px";
+  d.append(walk);
 
   const actions = el("div", "actions");
   const sel = el("select");

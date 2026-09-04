@@ -310,6 +310,7 @@ class TriagePlanner:
             case.add_vita_turn(reply, asked_about=asking_about)
             turn.reply = reply
             turn.asking_about = asking_about
+            self._trace(case, patient_said=message, turn=turn, reply=reply, concluded=False)
             return turn
 
         return self._conclude(case, turn, impression="")
@@ -416,6 +417,49 @@ class TriagePlanner:
 
     # -- convergence -----------------------------------------------------
 
+    def _trace(self, case: Case, *, patient_said: str, turn: PlannerTurn,
+               reply: str, concluded: bool) -> None:
+        """Record how this turn moved the triage, for the walkthrough view.
+
+        Written after the facts are in and the rules have been re-run, so the
+        urgency stored here is the one the patient's answer actually produced.
+        """
+        decision = decide(
+            self.kb.rules_for(case.complaint),
+            case.facts,
+            complaint=case.complaint,
+            contradictions=case.contradictions,
+            final=False,
+        )
+        previous = case.reasoning_trace[-1] if case.reasoning_trace else {}
+        before = previous.get("urgency_after", "")
+
+        case.reasoning_trace.append(
+            {
+                "turn": case.turn_number,
+                "patient_said": patient_said,
+                "vita_asked": reply,
+                "asking_about": turn.asking_about,
+                "thinking": turn.thinking,
+                "facts_recorded": sorted(set(turn.facts_recorded)),
+                "tools_called": list(dict.fromkeys(turn.tools_called)),
+                "red_flags": list(turn.red_flags),
+                "complaint": case.complaint.value,
+                "urgency_before": before,
+                "urgency_after": decision.urgency.value,
+                "urgency_changed": bool(before) and before != decision.urgency.value,
+                "rules_matched": decision.cited_rules,
+                "could_not_rule_out": [
+                    {"rule_id": e.rule.rule_id, "urgency": e.rule.urgency.value,
+                     "waiting_on": [c.fact for c in e.blocking]}
+                    for e in decision.potential
+                    if e.rule.urgency.rank >= Urgency.HIGH.rank
+                ][:4],
+                "open_unknowns": decision.unknowns[:6],
+                "concluded": concluded,
+            }
+        )
+
     def _current_fingerprint(self, case: Case) -> str:
         decision = decide(
             self.kb.rules_for(case.complaint),
@@ -508,6 +552,11 @@ class TriagePlanner:
 
         reply = self._closing_message(case)
         case.add_vita_turn(reply)
+
+        last_patient = next(
+            (t.text for t in reversed(case.turns) if t.role == "patient"), ""
+        )
+        self._trace(case, patient_said=last_patient, turn=turn, reply=reply, concluded=True)
 
         turn.reply = reply
         turn.finished = True

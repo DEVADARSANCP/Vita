@@ -221,6 +221,47 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             raise HTTPException(status_code=400, detail=result["error"])
         return JSONResponse(result)
 
+    @app.get("/api/cases/{case_id}/reasoning")
+    def reasoning(case_id: str) -> JSONResponse:
+        """How a case reached its decision, turn by turn.
+
+        The triage note says what was concluded. This says how - what the
+        patient said, what VITA asked and why, what it took from the answer, and
+        where the urgency stood after each exchange.
+        """
+        case = services.get_case(case_id)
+        if case is None:
+            raise HTTPException(status_code=404, detail=f"no case {case_id}")
+
+        decision = case.decision
+        return JSONResponse(
+            {
+                "case_id": case.case_id,
+                "patient_name": case.patient_name,
+                "complaint": case.complaint.value,
+                "language": case.language,
+                "status": case.status.value,
+                "trace": case.reasoning_trace,
+                "clinical_impression": case.clinical_impression,
+                "final": {
+                    "urgency": case.effective_urgency,
+                    "system_urgency": decision.urgency.value if decision else "",
+                    "department": decision.department if decision else "",
+                    "matched_rules": decision.cited_rules if decision else [],
+                    "escalation": [r.value for r in decision.escalation_reasons] if decision else [],
+                    "notes": decision.notes if decision else [],
+                    "unknowns": decision.unknowns if decision else [],
+                },
+                "overridden": bool(case.override_urgency),
+                "override": {
+                    "urgency": case.override_urgency,
+                    "reason": case.override_reason,
+                    "by": case.override_by,
+                },
+                "medication_photos": case.medication_photos,
+            }
+        )
+
     # -- approval queue ----------------------------------------------------
 
     @app.get("/api/requests")
@@ -358,6 +399,10 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
     @app.get("/evaluation")
     def evaluation_page() -> FileResponse:
         return FileResponse(STATIC_DIR / "evaluation.html")
+
+    @app.get("/reasoning")
+    def reasoning_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "reasoning.html")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

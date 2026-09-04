@@ -151,6 +151,12 @@ class Case:
     #: the patient, and clearly an AI impression rather than a diagnosis.
     clinical_impression: str = ""
 
+    #: One entry per turn: what the patient said, what VITA asked, what it
+    #: took from the answer, and where the triage stood afterwards. This is the
+    #: record that lets somebody walk a decision backwards - a triage note says
+    #: what was concluded, and this says how it got there.
+    reasoning_trace: list[dict[str, Any]] = field(default_factory=list)
+
     #: Medication photographs the patient sent, and what was read from each.
     medication_photos: list[dict[str, Any]] = field(default_factory=list)
 
@@ -302,6 +308,7 @@ class Case:
             "scope_uncertain": self.scope_uncertain,
             "clinical_impression": self.clinical_impression,
             "medication_photos": self.medication_photos,
+            "reasoning_trace": self.reasoning_trace,
             "asked_anything_else": self.asked_anything_else,
             "state_history": self.state_history,
             "synthetic": self.synthetic,

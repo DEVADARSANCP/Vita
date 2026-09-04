@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VITA — Case reasoning</title>
+<link rel="stylesheet" href="/static/vita.css">
+<style>
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px 18px 48px; }
+
+  .picker { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .picker select { min-width: 260px; }
+
+  .intro { padding: 16px 18px; margin-bottom: 16px; }
+  .intro h2 { margin: 0 0 7px; font-size: 18px; letter-spacing: -0.01em; }
+  .intro p { margin: 0; color: var(--ink-2); line-height: 1.6; }
+
+  .final { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 16px; }
+  .final .dept { font-weight: 620; }
+
+  /* the walkthrough */
+  .step { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 0; }
+  .rail { position: relative; }
+  .rail::before {
+    content: ""; position: absolute; left: 15px; top: 0; bottom: 0;
+    width: 2px; background: var(--line);
+  }
+  .step:first-child .rail::before { top: 22px; }
+  .step:last-child .rail::before { bottom: calc(100% - 22px); }
+  .dot {
+    position: absolute; left: 8px; top: 15px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--panel); border: 2px solid var(--line);
+    font-size: 9px; font-weight: 700; line-height: 12px; text-align: center; color: var(--muted);
+  }
+  .dot.moved { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .dot.final { border-color: var(--low); background: var(--low); color: #fff; }
+
+  .body { padding: 10px 0 20px; min-width: 0; }
+
+  .said, .asked {
+    padding: 9px 12px; border-radius: 9px; font-size: 14px; line-height: 1.55; margin-bottom: 8px;
+  }
+  .said { background: var(--accent-soft); border: 1px solid var(--accent); }
+  .asked { background: var(--panel); border: 1px solid var(--line); }
+  .said .who, .asked .who {
+    font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); font-weight: 650; margin-bottom: 3px;
+  }
+
+  .why {
+    font-size: 12.5px; color: var(--ink-2); font-style: italic;
+    border-left: 2px solid var(--line); padding-left: 10px; margin: 0 0 8px;
+  }
+
+  .took { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .took span {
+    font-size: 11.5px; padding: 2px 8px; border-radius: 5px;
+    background: var(--low-bg); color: var(--low); font-weight: 600;
+  }
+  .took span.none { background: var(--line-2); color: var(--muted); font-weight: 400; }
+
+  .moveline { font-size: 12.5px; margin-bottom: 7px; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .arrow { color: var(--muted); }
+
+  .open { font-size: 12.5px; color: var(--ink-2); }
+  .open .r { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--accent); }
+
+  .tools { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .impression {
+    background: var(--moderate-bg); border: 1px solid var(--moderate);
+    border-radius: 9px; padding: 12px 14px; line-height: 1.55;
+  }
+  .impression .tag {
+    display: block; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--moderate); font-weight: 700; margin-bottom: 5px;
+  }
+  .empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+  .badge { font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
+  .badge.pending { background: var(--accent-soft); color: var(--accent); }
+  .sect { margin-top: 18px; }
+  .sect h4 {
+    margin: 0 0 8px; font-size: 10.5px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); font-weight: 650;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">VITA <small>Case reasoning</small></div>
+  <div class="spacer"></div>
+  <a class="navlink" href="/dashboard">← Dashboard</a>
+  <a class="navlink" href="/evaluation">Self-check</a>
+  <a class="navlink" href="/">Patient view</a>
+</div>
+
+<div class="wrap">
+
+  <div class="panel intro">
+    <h2>Why did this patient get this grade?</h2>
+    <p>
+      Pick a patient and walk the whole intake: what they said, what VITA asked
+      and why it asked that, what it took from each answer, and how the urgency
+      moved as a result. The triage note says what was decided — this says how
+      it got there.
+    </p>
+  </div>
+
+  <div class="picker">
+    <select id="cases"></select>
+    <button id="reload">Refresh</button>
+    <span class="tiny muted" id="meta"></span>
+  </div>
+
+  <div id="out"><div class="empty">Pick a patient above.</div></div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
+const sect = (title, node) => { const w = el("div", "sect"); w.append(el("h4", null, title), node); return w; };
+
+async function api(p) {
+  const r = await fetch(p);
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function loadCases() {
+  const data = await api("/api/queue");
+  const sel = $("cases");
+  const current = sel.value;
+  sel.replaceChildren();
+
+  if (!data.cases.length) {
+    sel.append(el("option", null, "No cases yet — start one from the patient view"));
+    return;
+  }
+  for (const c of data.cases) {
+    const o = el("option", null,
+      `${c.case_id} · ${c.patient_name || "Anonymous"} · ${(c.complaint || "").replace(/_/g, " ")}` +
+      (c.urgency ? ` · ${c.urgency}` : " · still talking"));
+    o.value = c.case_id;
+    sel.append(o);
+  }
+  sel.value = current && data.cases.some((c) => c.case_id === current) ? current : data.cases[0].case_id;
+  await show(sel.value);
+}
+
+async function show(caseId) {
+  const out = $("out");
+  out.replaceChildren(el("div", "empty", "Loading…"));
+  try {
+    const d = await api(`/api/cases/${caseId}/reasoning`);
+    out.replaceChildren();
+
+    $("meta").textContent =
+      `${d.patient_name || "Anonymous"} · ${(d.complaint || "").replace(/_/g, " ")} · ${d.language}`;
+
+    /* the answer, up front */
+    const fin = el("div", "panel final");
+    const done = Boolean(d.final.urgency || d.final.system_urgency);
+    if (done) {
+      const u = d.final.urgency || d.final.system_urgency;
+      fin.append(el("span", `urgency ${u}`, u));
+      fin.append(el("span", "dept", d.final.department || "—"));
+      if (d.final.matched_rules.length) {
+        for (const r of d.final.matched_rules) fin.append(el("span", "rule-chip", r));
+      } else {
+        fin.append(el("span", "tiny muted", "no rule matched"));
+      }
+    } else {
+      // The intake has not closed, so there is no grade yet. Showing the
+      // running state is more use than an empty row.
+      const last = d.trace.length ? d.trace[d.trace.length - 1] : null;
+      fin.append(el("span", "badge pending", "still talking"));
+      if (last) {
+        fin.append(el("span", "tiny muted", "standing at"));
+        fin.append(el("span", `urgency ${last.urgency_after}`, last.urgency_after));
+        for (const r of last.rules_matched) fin.append(el("span", "rule-chip", r));
+      }
+      fin.append(el("span", "tiny muted", "no final grade until the intake closes"));
+    }
+    if (d.overridden) {
+      fin.append(el("span", "tiny muted",
+        `overridden from ${d.final.system_urgency} by ${d.override.by}`));
+    }
+    out.append(fin);
+
+    if (!d.trace.length) {
+      out.append(el("div", "empty", "This intake has not produced any turns yet."));
+      return;
+    }
+
+    /* the walkthrough */
+    const steps = el("div");
+    steps.style.marginTop = "16px";
+    d.trace.forEach((t, i) => {
+      const step = el("div", "step");
+
+      const rail = el("div", "rail");
+      const dot = el("div", `dot ${t.concluded ? "final" : t.urgency_changed ? "moved" : ""}`,
+                     String(t.turn || i + 1));
+      rail.append(dot);
+
+      const body = el("div", "body");
+
+      if (t.patient_said) {
+        const said = el("div", "said");
+        said.append(el("div", "who", "Patient said"), document.createTextNode(t.patient_said));
+        body.append(said);
+      }
+
+      if (t.thinking) body.append(el("p", "why", t.thinking));
+
+      const took = el("div", "took");
+      if (t.facts_recorded.length) {
+        for (const f of t.facts_recorded) took.append(el("span", null, `recorded ${f.replace(/_/g, " ")}`));
+      } else {
+        took.append(el("span", "none", "nothing new established"));
+      }
+      for (const f of t.red_flags || []) took.append(el("span", null, `red flag ${f}`));
+      body.append(took);
+
+      const move = el("div", "moveline");
+      if (t.urgency_changed) {
+        move.append(el("span", `urgency ${t.urgency_before}`, t.urgency_before));
+        move.append(el("span", "arrow", "→"));
+        move.append(el("span", `urgency ${t.urgency_after}`, t.urgency_after));
+      } else {
+        move.append(el("span", `urgency ${t.urgency_after}`, t.urgency_after));
+        move.append(el("span", "tiny muted", "unchanged"));
+      }
+      if (t.rules_matched.length) {
+        for (const r of t.rules_matched) move.append(el("span", "rule-chip", r));
+      }
+      body.append(move);
+
+      if ((t.could_not_rule_out || []).length) {
+        const open = el("div", "open");
+        for (const r of t.could_not_rule_out) {
+          const line = el("div");
+          line.append(document.createTextNode("could not rule out "));
+          line.append(el("span", "r", r.rule_id));
+          line.append(document.createTextNode(
+            ` (${r.urgency}) — waiting on ${r.waiting_on.join(", ").replace(/_/g, " ")}`));
+          open.append(line);
+        }
+        body.append(open);
+      }
+
+      if (t.vita_asked) {
+        const asked = el("div", "asked");
+        asked.style.marginTop = "8px";
+        asked.append(el("div", "who", t.concluded ? "VITA closed with" : "VITA then asked"),
+                     document.createTextNode(t.vita_asked));
+        body.append(asked);
+      }
+
+      if ((t.tools_called || []).length) {
+        body.append(el("div", "tools", `looked up: ${t.tools_called.join(", ")}`));
+      }
+
+      step.append(rail, body);
+      steps.append(step);
+    });
+    out.append(steps);
+
+    if (d.clinical_impression) {
+      const box = el("div", "impression");
+      box.append(el("span", "tag", "Assistant’s read of the case · for clinician review"),
+                 document.createTextNode(d.clinical_impression));
+      out.append(sect("What the assistant made of it", box));
+    }
+
+    if ((d.final.notes || []).length) {
+      const ul = el("ul", "facts");
+      for (const n of d.final.notes) ul.append(el("li", null, n));
+      out.append(sect("Why it was escalated", ul));
+    }
+
+    if ((d.final.unknowns || []).length) {
+      const ul = el("ul", "facts unknown-list");
+      for (const u of d.final.unknowns) ul.append(el("li", null, u.replace(/_/g, " ")));
+      out.append(sect("Could not be established", ul));
+    }
+  } catch (err) {
+    out.replaceChildren(el("div", "empty", `Could not load: ${err.message}`));
+  }
+}
+
+$("cases").onchange = (e) => show(e.target.value);
+$("reload").onclick = loadCases;
+
+const preset = new URLSearchParams(location.search).get("case");
+loadCases().then(() => { if (preset) { $("cases").value = preset; show(preset); } });
+</script>
+</body>
+</html>

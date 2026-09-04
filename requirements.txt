@@ -25,3 +25,11 @@ numpy>=1.26
 # external client can drive VITA with the identical implementation. Local
 # transport only; nothing here goes over the network.
 mcp>=1.2
+
+# --- patient memory -----------------------------------------------------
+# MemPalace holds what VITA remembers between visits: previous presentations,
+# whether they resolved, durable patient facts, clinician notes. Configured
+# with the sqlite_exact backend (local file, sqlite3 + numpy) and with
+# gemini-embedding-001 injected as its embedder, so its default ONNX weights
+# are never downloaded and nothing but Gemini crosses the network.
+mempalace==3.6.0

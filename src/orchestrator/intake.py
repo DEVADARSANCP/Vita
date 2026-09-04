@@ -47,6 +47,7 @@ from ..core.rules import decide, evaluate_all, infer_complaint, next_unknown
 from ..core.schema import Complaint, EscalationReason, Fact, FactSource, Tri, Urgency
 from ..llm.gemini import GeminiClient
 from ..llm.phrasing import Phraser
+from ..rag.retriever import Retriever
 
 logger = logging.getLogger(__name__)
 
@@ -106,11 +107,13 @@ class IntakeOrchestrator:
         registry: AgentRegistry,
         llm: GeminiClient,
         phraser: Phraser | None = None,
+        retriever: Retriever | None = None,
     ) -> None:
         self.kb = kb
         self.registry = registry
         self.llm = llm
         self.phraser = phraser or Phraser(llm)
+        self.retriever = retriever
         self._red_flag_agent = next(
             (a for a in registry.deterministic() if isinstance(a, RedFlagAgent)), None
         )
@@ -140,6 +143,16 @@ class IntakeOrchestrator:
 
         # 2 & 3. Language understanding, if it is available.
         self._run_extraction(case, ctx, result)
+
+        # Scope check, on the opening description only. Later turns are answers
+        # to our own questions and would classify against the question rather
+        # than the complaint. This is the second net: stroke, self-harm and
+        # obstetric phrasings are already caught deterministically by red flags,
+        # and this catches what a fixed phrase list cannot.
+        if turn == 1:
+            self._check_scope(case, ctx, result)
+            if case.out_of_scope:
+                return self._close(case, result, out_of_scope=True)
 
         # Settle the complaint before any exit, so that a case closing on the
         # fast path is still evaluated against the right rule set. Skipping this
@@ -391,6 +404,34 @@ class IntakeOrchestrator:
         language = case.facts.get("language")
         if language is not None and language.is_known:
             case.language = str(language.value)
+
+    def _check_scope(self, case: Case, ctx: AgentContext, result: TurnResult) -> None:
+        """Decide whether this is something VITA covers at all.
+
+        An uncertain verdict escalates in the same way a negative one does. A
+        description sitting between covered and uncovered is exactly the case
+        where guessing is worst, and handing it to a clinician costs a few
+        minutes of their time against triaging something the rules do not
+        describe.
+        """
+        if self.retriever is None:
+            return
+
+        verdict = self.retriever.check_scope(ctx.message)
+        case.scope_verdict = verdict.as_dict()
+
+        if verdict.method == "unavailable":
+            return
+
+        if verdict.should_escalate:
+            logger.info(
+                "case %s out of scope: nearest class %s (margin %.3f)",
+                case.case_id,
+                verdict.label,
+                verdict.margin,
+            )
+            case.out_of_scope = True
+            result.notes.append(verdict.explain())
 
     def _red_flag_ceiling(self, case: Case) -> Urgency:
         """The highest urgency any matched red flag carries."""

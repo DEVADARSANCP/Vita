@@ -110,8 +110,13 @@ class Case:
 
     #: Ids of red flags that fired at any point during the intake.
     red_flags: list[str] = field(default_factory=list)
-    #: True when a red flag placed the case outside the covered rule set.
+    #: True when a red flag or the scope classifier placed the case outside the
+    #: covered rule set.
     out_of_scope: bool = False
+
+    #: The scope classifier's verdict and its evidence, kept so a clinician can
+    #: see why VITA declined to triage rather than only that it did.
+    scope_verdict: dict[str, Any] = field(default_factory=dict)
 
     decision: TriageDecision | None = None
     #: The mode the system was in when the decision was produced.
@@ -243,6 +248,7 @@ class Case:
             "requires_human_review": self.decision.requires_human_review if self.decision else False,
             "red_flags": self.red_flags,
             "out_of_scope": self.out_of_scope,
+            "scope_verdict": self.scope_verdict,
             "decided_in_mode": self.decided_in_mode.value,
             "overridden": bool(self.override_urgency),
             "turn_count": self.turn_number,

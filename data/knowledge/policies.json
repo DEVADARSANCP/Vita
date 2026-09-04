@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "note": "Hospital policy documents for Vita General Hospital. Synthetic, written for demonstration. These are the operational layer, deliberately separate from the clinical triage rules: how urgent a chest pain is does not vary between hospitals, but who takes it at 2am, who must be called, and what happens when a department is full are exactly what does. Retrieval over this corpus is allowed to miss, because a miss costs routing quality and a clinician sees it. Retrieval is NOT used to select clinical rules, where a miss would silently under-triage a patient.",
+  "documents": [
+    {
+      "id": "POL-01",
+      "title": "After-hours departmental routing",
+      "category": "routing",
+      "applies_to": ["all"],
+      "text": "Outside published departmental hours, all walk-in presentations route to Emergency regardless of the department indicated by triage. Cardiology, Orthopaedics, Pulmonology and Surgery operate day clinics only; a patient triaged to one of these outside its published hours is seen in Emergency and referred internally the following morning. General Medicine closes at 20:00. The Triage Desk and Emergency are staffed continuously. Departmental hours are recorded in the hospital directory and are authoritative over any routing suggestion."
+    },
+    {
+      "id": "POL-02",
+      "title": "Mandatory clinician review",
+      "category": "escalation",
+      "applies_to": ["all"],
+      "text": "No patient may be routed on an automated recommendation alone where any of the following holds: the recommended urgency is HIGH or CRITICAL; a triage rule marked as requiring review has matched; the patient gave conflicting answers about the same clinical finding; required information could not be established; or the presentation falls outside the covered complaint set. In each case a registered clinician reviews the case before the patient is directed anywhere. The reviewing clinician may raise or lower the urgency and must record a reason, which is retained alongside the original automated recommendation rather than replacing it."
+    },
+    {
+      "id": "POL-03",
+      "title": "Capacity does not alter acuity",
+      "category": "escalation",
+      "applies_to": ["all"],
+      "text": "Departmental occupancy is displayed to triage staff for planning and is never an input to the urgency assigned to a patient. A HIGH or CRITICAL patient retains that grading when the receiving department is at capacity. Where a department cannot accept a patient, the triage lead arranges an alternative placement or holds the patient in Emergency; the patient's recorded urgency is not adjusted to reflect available space. Queue order within a department is by urgency first and arrival time second."
+    },
+    {
+      "id": "POL-04",
+      "title": "Presentations outside the covered complaint set",
+      "category": "scope",
+      "applies_to": ["all"],
+      "text": "The automated intake assistant covers five walk-in complaints: fever, injury, chest pain, breathing difficulty and abdominal pain. Suspected stroke, obstetric and pregnancy-related presentations, mental health crises including self-harm and suicidal ideation, paediatric presentations under 12 years, ophthalmic and dental emergencies, poisoning and overdose are outside its scope. Such presentations are handed to the triage lead immediately without an automated urgency being assigned. The assistant records what the patient said and states that it has not triaged the case."
+    },
+    {
+      "id": "POL-05",
+      "title": "Unscheduled re-presentation within 72 hours",
+      "category": "escalation",
+      "applies_to": ["all"],
+      "text": "A patient returning within 72 hours with the same unresolved complaint is reviewed by a clinician regardless of how the current presentation grades on its own. Unscheduled re-presentation is a recognised marker of a missed diagnosis or a deteriorating condition, and the second assessment is conducted with the first case notes available. The reviewing clinician records whether the original disposition remains appropriate."
+    },
+    {
+      "id": "POL-06",
+      "title": "Chest pain pathway",
+      "category": "pathway",
+      "applies_to": ["chest_pain"],
+      "text": "All chest pain presentations are seen in Emergency in the first instance unless every cardiac feature has been explicitly excluded. An ECG is obtained within ten minutes of arrival for any patient with chest pain accompanied by breathlessness, radiation to the arm, jaw, neck or back, sweating, nausea, syncope, or a known cardiac history, and for any patient aged 40 or over with new chest pain. Chest pain reproducible on chest wall palpation, with no dyspnoea and no radiation, may follow the General Medicine pathway only after a clinician has reviewed the exclusions."
+    },
+    {
+      "id": "POL-07",
+      "title": "Anticoagulation as a routing modifier",
+      "category": "pathway",
+      "applies_to": ["injury", "abdominal_pain"],
+      "text": "A patient taking anticoagulant or antiplatelet medication who presents with any head injury is seen in Emergency and assessed for delayed intracranial haemorrhage, irrespective of how well they appear and irrespective of the interval since injury. The same applies to any anticoagulated patient reporting gastrointestinal bleeding, black stool or unexplained abdominal pain. Intake staff record the medication name as reported by the patient; classification of that medication is performed against the hospital's medication reference and not by clinical judgement at the desk."
+    },
+    {
+      "id": "POL-08",
+      "title": "Febrile patients and infection control",
+      "category": "pathway",
+      "applies_to": ["fever"],
+      "text": "Febrile patients with a cough or breathing difficulty are masked at the point of intake and directed to the segregated waiting area adjacent to Emergency. Fever with neck stiffness or a non-blanching rash is treated as a potential meningococcal presentation and taken directly to a resuscitation bay without waiting. Fever in a patient receiving chemotherapy, taking systemic steroids or otherwise immunosuppressed is treated as possible neutropenic sepsis and seen within fifteen minutes of arrival, regardless of how well the patient appears."
+    },
+    {
+      "id": "POL-09",
+      "title": "Clinician notification for urgent intakes",
+      "category": "notification",
+      "applies_to": ["all"],
+      "text": "Where triage assigns HIGH or CRITICAL urgency, or flags a case for mandatory review, the on-call clinician for the receiving department is notified directly in addition to the case appearing on the departmental dashboard. Recipients are drawn from the on-call roster held in the hospital directory. Notification content is limited to the case identifier, urgency, department, matched rules, outstanding unknowns and the triage note. Where no on-call clinician is recorded for the receiving department, the triage lead is notified instead and the gap is logged."
+    },
+    {
+      "id": "POL-10",
+      "title": "Ambulance and emergency transport requests",
+      "category": "transport",
+      "applies_to": ["all"],
+      "text": "An emergency transport request is raised only on explicit confirmation by the patient or an accompanying person, and only after a pickup location has been confirmed. The intake assistant may offer the option where triage has assigned HIGH or CRITICAL urgency; it may not raise a request on its own initiative. Every request is logged with the case identifier, the confirmed pickup location, the requested priority and the time of confirmation, and appears immediately on the emergency operations view. A request is a request for dispatch and is not itself a dispatch: allocation of a vehicle is made by emergency operations."
+    },
+    {
+      "id": "POL-11",
+      "title": "Language of intake and the clinical record",
+      "category": "records",
+      "applies_to": ["all"],
+      "text": "Patients may complete intake in any language they are comfortable using. The patient's own words are retained verbatim in the language given, and the structured clinical facts derived from them are recorded in English for the clinical record. Both are presented together to the reviewing clinician so that the derivation can be audited. Where a translation is uncertain, the fact is recorded as unknown rather than approximated, and the case is flagged for review. Interpreters are available on request through the triage lead."
+    },
+    {
+      "id": "POL-12",
+      "title": "Automated intake limitations",
+      "category": "governance",
+      "applies_to": ["all"],
+      "text": "The intake assistant is a triage support tool. It does not diagnose, does not prescribe, does not advise on medication and does not communicate reassurance about a patient's condition. Every urgency it assigns is produced by the hospital's documented triage rules and cites the rule applied. Where language understanding is unavailable, the assistant continues to operate on its deterministic pathways, records that it did so, and refers every case handled in that state for clinician review. Clinical responsibility for every disposition rests with the reviewing clinician."
+    }
+  ]
+}

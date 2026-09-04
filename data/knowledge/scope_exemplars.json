@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "note": "Labelled example phrasings, used to decide whether a description is something VITA covers. An absolute similarity threshold does not work for this: measured against this corpus, Gemini embeddings put unrelated text ('my cat scratched my laptop') at 0.55 and a genuine self-harm disclosure at 0.59, so no cut-off separates them. What does work is nearest-class - compare the description against examples of what IS covered and examples of what is NOT, and see which side it lands on. These are deliberately written the way patients speak, not the way clinicians do.",
+  "covered": {
+    "chest_pain": [
+      "my chest hurts",
+      "there is a tightness in my chest",
+      "I have pain in my chest and it goes into my arm",
+      "pressure in the middle of my chest since this morning",
+      "burning pain behind my breastbone"
+    ],
+    "fever": [
+      "I have a fever",
+      "I have been hot and shivering since yesterday",
+      "high temperature and my whole body aches",
+      "I feel feverish and weak",
+      "running a temperature with chills"
+    ],
+    "breathing_difficulty": [
+      "I am short of breath",
+      "I find it hard to breathe",
+      "I get breathless walking up the stairs",
+      "wheezing and cannot catch my breath",
+      "my breathing feels tight"
+    ],
+    "injury": [
+      "I fell and hurt my leg",
+      "I cut my hand and it is bleeding",
+      "I was in a road accident",
+      "I twisted my ankle and cannot walk on it",
+      "something heavy fell on my foot"
+    ],
+    "abdominal_pain": [
+      "my stomach hurts",
+      "I have bad pain in my belly",
+      "cramping pain in my abdomen since last night",
+      "sharp pain on the right side of my tummy",
+      "my stomach is hurting and I keep vomiting"
+    ]
+  },
+  "out_of_scope": {
+    "stroke": [
+      "my face has gone droopy on one side",
+      "I cannot move my arm and my speech is slurred",
+      "one side of my body has gone weak suddenly",
+      "I suddenly cannot speak properly"
+    ],
+    "obstetric": [
+      "I am pregnant and bleeding",
+      "I am pregnant and having contractions",
+      "my waters have broken",
+      "I am pregnant and the baby has stopped moving"
+    ],
+    "mental_health": [
+      "I want to end my life",
+      "I have been having thoughts of hurting myself",
+      "I do not want to live any more",
+      "I am having a panic attack and cannot cope",
+      "I have been hearing voices"
+    ],
+    "paediatric": [
+      "my baby has a rash and will not feed",
+      "my three year old has been vomiting all night",
+      "my child fell off the bed and is crying",
+      "my toddler has a high temperature"
+    ],
+    "dental_ophthalmic": [
+      "my tooth has been aching for three days",
+      "my gum is swollen and painful",
+      "something went into my eye and it hurts",
+      "my vision has gone blurry in one eye"
+    ],
+    "poisoning": [
+      "I swallowed too many tablets",
+      "I think I have been poisoned",
+      "I drank something I should not have",
+      "I took an overdose"
+    ],
+    "not_medical": [
+      "I want to book an appointment",
+      "where is the pharmacy",
+      "I need a copy of my medical records",
+      "my cat scratched my laptop screen",
+      "how much does a consultation cost"
+    ]
+  }
+}

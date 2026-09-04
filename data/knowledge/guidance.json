@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "note": "Clinical guidance prose for the five covered complaints. Written to be retrieved and cited, not to be reasoned over: the triage decision is made by the rule engine against structured facts, and these documents explain to a human why the rules look the way they do. Adapted in spirit from publicly described triage frameworks. Synthetic and NOT clinically validated.",
+  "documents": [
+    {
+      "id": "GUI-CP-1",
+      "title": "Chest pain: features that raise concern",
+      "complaint": "chest_pain",
+      "text": "Chest pain is triaged on the pattern of associated features rather than on the pain itself, because severity correlates poorly with cause. The features that raise concern are radiation to the arm, jaw, neck or back; accompanying breathlessness; sweating and nausea occurring together; syncope or presyncope; and a known cardiac history. Age is a modifier: new chest pain in a patient of 40 or over carries a materially higher pre-test probability of a cardiac cause than the same description in a younger patient. Absence of these features does not exclude a cardiac cause, which is why chest pain with everything excluded is still reviewed rather than discharged from triage."
+    },
+    {
+      "id": "GUI-CP-2",
+      "title": "Chest pain: patterns suggesting a non-cardiac cause",
+      "complaint": "chest_pain",
+      "text": "Pain that is reproducible on palpation of the chest wall, sharply localised, and unaccompanied by breathlessness or radiation is consistent with a musculoskeletal cause. Pain that worsens distinctly on deep inspiration or coughing, particularly alongside fever, suggests a pleuritic or infective cause and follows a respiratory rather than cardiac pathway. Neither pattern is treated as reassuring on its own: the triage rules require every cardiac feature to be explicitly excluded before a chest pain is graded low, and an unasked question is not an exclusion."
+    },
+    {
+      "id": "GUI-FV-1",
+      "title": "Fever: red flag features",
+      "complaint": "fever",
+      "text": "The concern in a febrile patient is not the temperature but what accompanies it. Neck stiffness raises the possibility of meningitis. A rash that does not blanch under pressure raises the possibility of meningococcal sepsis and is time-critical. Confusion or unusual drowsiness is a recognised marker of sepsis or central nervous system infection and is significant even where the temperature is unremarkable. Breathlessness alongside fever suggests a lower respiratory tract infection with systemic involvement. A temperature of 40 degrees Celsius or above is itself a threshold for urgent assessment."
+    },
+    {
+      "id": "GUI-FV-2",
+      "title": "Fever: immunosuppression and duration",
+      "complaint": "fever",
+      "text": "Fever in a patient receiving chemotherapy, taking systemic steroids, on immunosuppressive therapy, or otherwise immunocompromised may represent neutropenic sepsis. Such patients can deteriorate rapidly while appearing well, and the ordinary reassurance offered by a comfortable-looking patient does not apply. Fever persisting five days or more warrants assessment for an underlying cause but carries no time-critical feature in itself. Short-lived low-grade fever with every red flag explicitly excluded follows the routine pathway."
+    },
+    {
+      "id": "GUI-BR-1",
+      "title": "Breathing difficulty: assessing severity",
+      "complaint": "breathing_difficulty",
+      "text": "The single most useful bedside measure of respiratory distress is whether the patient can complete a sentence in one breath. Inability to do so indicates severe distress irrespective of any other observation. Visible cyanosis of the lips or fingertips indicates significant hypoxia and is treated as immediately critical. Breathlessness of sudden onset accompanied by chest pain raises the possibility of pulmonary embolism or pneumothorax. An asthmatic patient with active wheeze and breathlessness may be in an acute exacerbation, which can deteriorate quickly even where the patient currently appears stable."
+    },
+    {
+      "id": "GUI-BR-2",
+      "title": "Breathing difficulty: chronic presentations",
+      "complaint": "breathing_difficulty",
+      "text": "Breathlessness present for a week or more, with speech intact, no cyanosis and no chest pain, is a chronic presentation suitable for the standard respiratory pathway rather than emergency assessment. The distinction that matters at triage is the time course and the presence of acute features, not the patient's subjective description of how bad it feels. A patient who has been gradually more breathless over months and one who became breathless an hour ago require different responses even where they report identical difficulty."
+    },
+    {
+      "id": "GUI-IN-1",
+      "title": "Injury: mechanism and concealed harm",
+      "complaint": "injury",
+      "text": "Mechanism of injury is triaged alongside the visible result, because a high-energy mechanism can conceal serious injury behind an unremarkable initial appearance. Road traffic collisions, falls from height, and crush injuries are treated as high-energy. Bleeding that does not stop under firm direct pressure is immediately life-threatening. Head injury with any loss of consciousness, however brief, requires assessment for intracranial injury. Visible limb deformity indicates probable fracture or dislocation and needs prompt orthopaedic assessment but is not itself time-critical."
+    },
+    {
+      "id": "GUI-IN-2",
+      "title": "Injury: anticoagulation and the well-appearing patient",
+      "complaint": "injury",
+      "text": "A patient taking anticoagulant or antiplatelet medication who has sustained a head injury is at substantially raised risk of intracranial bleeding that develops over hours, and may appear entirely well at the point of intake. This is the presentation most likely to be under-triaged, precisely because nothing about the patient looks concerning. Medication is therefore treated as a triage fact in its own right, established from the name the patient reports and classified against the hospital medication reference rather than by judgement at the desk."
+    },
+    {
+      "id": "GUI-AB-1",
+      "title": "Abdominal pain: surgical emergencies",
+      "complaint": "abdominal_pain",
+      "text": "A rigid abdomen with pain markedly worsened by gentle pressure suggests peritonitis and is a surgical emergency. Vomiting blood, or vomit resembling coffee grounds, indicates active upper gastrointestinal bleeding. Black tarry stool indicates bleeding that has already occurred and may be continuing. Pain that begins suddenly and at severe intensity, rather than building, raises the possibility of perforation, obstruction or a vascular event. Lower abdominal pain accompanied by testicular pain raises the possibility of testicular torsion, where delay costs the organ."
+    },
+    {
+      "id": "GUI-AB-2",
+      "title": "Abdominal pain: pregnancy and inflammatory causes",
+      "complaint": "abdominal_pain",
+      "text": "Abdominal pain in a patient who is or may be pregnant requires urgent obstetric input, as ectopic pregnancy and placental complications are time-critical and may present with pain that seems disproportionate to how unwell the patient looks. Abdominal pain accompanied by fever suggests an inflammatory or infective cause such as appendicitis and warrants surgical assessment. Mild pain with every red-flag feature explicitly excluded follows the routine pathway; as elsewhere, a feature nobody asked about has not been excluded."
+    },
+    {
+      "id": "GUI-GEN-1",
+      "title": "Why unknowns escalate rather than default",
+      "complaint": "general",
+      "text": "Triage error is not symmetric. Over-triage costs clinician time and a patient's place in a queue. Under-triage can cost a life, and it is the failure mode that looks like success: a case graded low because nobody established the facts that would have caught it appears, in the record, identical to a case that was genuinely low risk. For that reason information that could not be established is recorded as unknown and never treated as absent, a rule that could not be excluded raises the urgency floor rather than being set aside, and no urgency is ever lowered on the basis of a question that went unanswered."
+    },
+    {
+      "id": "GUI-GEN-2",
+      "title": "Age, pregnancy and re-presentation as modifiers",
+      "complaint": "general",
+      "text": "Three factors modify triage regardless of the presenting complaint. Older patients frequently under-report symptom severity and deteriorate with fewer warning signs, so moderate or worse pain in a patient of 75 or over is reviewed by a clinician. Pregnancy alters both the differential and the urgency of abdominal and systemic presentations. Unscheduled re-presentation within 72 hours with the same unresolved complaint is a recognised marker of a missed or evolving diagnosis, and is reviewed with the previous case notes available however mild the current presentation appears."
+    },
+    {
+      "id": "GUI-GEN-3",
+      "title": "What this assistant does not do",
+      "complaint": "general",
+      "text": "The intake assistant establishes facts from what a patient says and applies documented triage rules to them. It does not diagnose, name conditions, prescribe or advise on medication, or offer reassurance about a patient's condition. It does not decide urgency by judgement: every grading it produces comes from a rule that is cited in the output and can be read in full. Where it cannot establish what a rule needs, it says so and hands the case to a clinician rather than assuming. Where language understanding is unavailable it continues on its deterministic pathways, records that it did so, and refers every case handled in that state."
+    }
+  ]
+}

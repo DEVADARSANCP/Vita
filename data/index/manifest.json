@@ -1,0 +1,513 @@
+{
+  "model": "gemini-embedding-001",
+  "dimensions": 3072,
+  "count": 25,
+  "fingerprint": "f4c34a2552bfa130",
+  "built_at": "2026-09-04T18:53:31Z",
+  "documents": [
+    {
+      "id": "GUI-AB-1",
+      "title": "Abdominal pain: surgical emergencies",
+      "kind": "guidance",
+      "category": "abdominal_pain",
+      "applies_to": [
+        "abdominal_pain"
+      ]
+    },
+    {
+      "id": "GUI-AB-2",
+      "title": "Abdominal pain: pregnancy and inflammatory causes",
+      "kind": "guidance",
+      "category": "abdominal_pain",
+      "applies_to": [
+        "abdominal_pain"
+      ]
+    },
+    {
+      "id": "GUI-BR-1",
+      "title": "Breathing difficulty: assessing severity",
+      "kind": "guidance",
+      "category": "breathing_difficulty",
+      "applies_to": [
+        "breathing_difficulty"
+      ]
+    },
+    {
+      "id": "GUI-BR-2",
+      "title": "Breathing difficulty: chronic presentations",
+      "kind": "guidance",
+      "category": "breathing_difficulty",
+      "applies_to": [
+        "breathing_difficulty"
+      ]
+    },
+    {
+      "id": "GUI-CP-1",
+      "title": "Chest pain: features that raise concern",
+      "kind": "guidance",
+      "category": "chest_pain",
+      "applies_to": [
+        "chest_pain"
+      ]
+    },
+    {
+      "id": "GUI-CP-2",
+      "title": "Chest pain: patterns suggesting a non-cardiac cause",
+      "kind": "guidance",
+      "category": "chest_pain",
+      "applies_to": [
+        "chest_pain"
+      ]
+    },
+    {
+      "id": "GUI-FV-1",
+      "title": "Fever: red flag features",
+      "kind": "guidance",
+      "category": "fever",
+      "applies_to": [
+        "fever"
+      ]
+    },
+    {
+      "id": "GUI-FV-2",
+      "title": "Fever: immunosuppression and duration",
+      "kind": "guidance",
+      "category": "fever",
+      "applies_to": [
+        "fever"
+      ]
+    },
+    {
+      "id": "GUI-GEN-1",
+      "title": "Why unknowns escalate rather than default",
+      "kind": "guidance",
+      "category": "general",
+      "applies_to": [
+        "general"
+      ]
+    },
+    {
+      "id": "GUI-GEN-2",
+      "title": "Age, pregnancy and re-presentation as modifiers",
+      "kind": "guidance",
+      "category": "general",
+      "applies_to": [
+        "general"
+      ]
+    },
+    {
+      "id": "GUI-GEN-3",
+      "title": "What this assistant does not do",
+      "kind": "guidance",
+      "category": "general",
+      "applies_to": [
+        "general"
+      ]
+    },
+    {
+      "id": "GUI-IN-1",
+      "title": "Injury: mechanism and concealed harm",
+      "kind": "guidance",
+      "category": "injury",
+      "applies_to": [
+        "injury"
+      ]
+    },
+    {
+      "id": "GUI-IN-2",
+      "title": "Injury: anticoagulation and the well-appearing patient",
+      "kind": "guidance",
+      "category": "injury",
+      "applies_to": [
+        "injury"
+      ]
+    },
+    {
+      "id": "POL-01",
+      "title": "After-hours departmental routing",
+      "kind": "policy",
+      "category": "routing",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-02",
+      "title": "Mandatory clinician review",
+      "kind": "policy",
+      "category": "escalation",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-03",
+      "title": "Capacity does not alter acuity",
+      "kind": "policy",
+      "category": "escalation",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-04",
+      "title": "Presentations outside the covered complaint set",
+      "kind": "policy",
+      "category": "scope",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-05",
+      "title": "Unscheduled re-presentation within 72 hours",
+      "kind": "policy",
+      "category": "escalation",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-06",
+      "title": "Chest pain pathway",
+      "kind": "policy",
+      "category": "pathway",
+      "applies_to": [
+        "chest_pain"
+      ]
+    },
+    {
+      "id": "POL-07",
+      "title": "Anticoagulation as a routing modifier",
+      "kind": "policy",
+      "category": "pathway",
+      "applies_to": [
+        "injury",
+        "abdominal_pain"
+      ]
+    },
+    {
+      "id": "POL-08",
+      "title": "Febrile patients and infection control",
+      "kind": "policy",
+      "category": "pathway",
+      "applies_to": [
+        "fever"
+      ]
+    },
+    {
+      "id": "POL-09",
+      "title": "Clinician notification for urgent intakes",
+      "kind": "policy",
+      "category": "notification",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-10",
+      "title": "Ambulance and emergency transport requests",
+      "kind": "policy",
+      "category": "transport",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-11",
+      "title": "Language of intake and the clinical record",
+      "kind": "policy",
+      "category": "records",
+      "applies_to": [
+        "all"
+      ]
+    },
+    {
+      "id": "POL-12",
+      "title": "Automated intake limitations",
+      "kind": "policy",
+      "category": "governance",
+      "applies_to": [
+        "all"
+      ]
+    }
+  ],
+  "exemplar_count": 55,
+  "exemplars": [
+    {
+      "text": "my stomach hurts",
+      "label": "abdominal_pain",
+      "covered": true
+    },
+    {
+      "text": "I have bad pain in my belly",
+      "label": "abdominal_pain",
+      "covered": true
+    },
+    {
+      "text": "cramping pain in my abdomen since last night",
+      "label": "abdominal_pain",
+      "covered": true
+    },
+    {
+      "text": "sharp pain on the right side of my tummy",
+      "label": "abdominal_pain",
+      "covered": true
+    },
+    {
+      "text": "my stomach is hurting and I keep vomiting",
+      "label": "abdominal_pain",
+      "covered": true
+    },
+    {
+      "text": "I am short of breath",
+      "label": "breathing_difficulty",
+      "covered": true
+    },
+    {
+      "text": "I find it hard to breathe",
+      "label": "breathing_difficulty",
+      "covered": true
+    },
+    {
+      "text": "I get breathless walking up the stairs",
+      "label": "breathing_difficulty",
+      "covered": true
+    },
+    {
+      "text": "wheezing and cannot catch my breath",
+      "label": "breathing_difficulty",
+      "covered": true
+    },
+    {
+      "text": "my breathing feels tight",
+      "label": "breathing_difficulty",
+      "covered": true
+    },
+    {
+      "text": "my chest hurts",
+      "label": "chest_pain",
+      "covered": true
+    },
+    {
+      "text": "there is a tightness in my chest",
+      "label": "chest_pain",
+      "covered": true
+    },
+    {
+      "text": "I have pain in my chest and it goes into my arm",
+      "label": "chest_pain",
+      "covered": true
+    },
+    {
+      "text": "pressure in the middle of my chest since this morning",
+      "label": "chest_pain",
+      "covered": true
+    },
+    {
+      "text": "burning pain behind my breastbone",
+      "label": "chest_pain",
+      "covered": true
+    },
+    {
+      "text": "I have a fever",
+      "label": "fever",
+      "covered": true
+    },
+    {
+      "text": "I have been hot and shivering since yesterday",
+      "label": "fever",
+      "covered": true
+    },
+    {
+      "text": "high temperature and my whole body aches",
+      "label": "fever",
+      "covered": true
+    },
+    {
+      "text": "I feel feverish and weak",
+      "label": "fever",
+      "covered": true
+    },
+    {
+      "text": "running a temperature with chills",
+      "label": "fever",
+      "covered": true
+    },
+    {
+      "text": "I fell and hurt my leg",
+      "label": "injury",
+      "covered": true
+    },
+    {
+      "text": "I cut my hand and it is bleeding",
+      "label": "injury",
+      "covered": true
+    },
+    {
+      "text": "I was in a road accident",
+      "label": "injury",
+      "covered": true
+    },
+    {
+      "text": "I twisted my ankle and cannot walk on it",
+      "label": "injury",
+      "covered": true
+    },
+    {
+      "text": "something heavy fell on my foot",
+      "label": "injury",
+      "covered": true
+    },
+    {
+      "text": "my tooth has been aching for three days",
+      "label": "dental_ophthalmic",
+      "covered": false
+    },
+    {
+      "text": "my gum is swollen and painful",
+      "label": "dental_ophthalmic",
+      "covered": false
+    },
+    {
+      "text": "something went into my eye and it hurts",
+      "label": "dental_ophthalmic",
+      "covered": false
+    },
+    {
+      "text": "my vision has gone blurry in one eye",
+      "label": "dental_ophthalmic",
+      "covered": false
+    },
+    {
+      "text": "I want to end my life",
+      "label": "mental_health",
+      "covered": false
+    },
+    {
+      "text": "I have been having thoughts of hurting myself",
+      "label": "mental_health",
+      "covered": false
+    },
+    {
+      "text": "I do not want to live any more",
+      "label": "mental_health",
+      "covered": false
+    },
+    {
+      "text": "I am having a panic attack and cannot cope",
+      "label": "mental_health",
+      "covered": false
+    },
+    {
+      "text": "I have been hearing voices",
+      "label": "mental_health",
+      "covered": false
+    },
+    {
+      "text": "I want to book an appointment",
+      "label": "not_medical",
+      "covered": false
+    },
+    {
+      "text": "where is the pharmacy",
+      "label": "not_medical",
+      "covered": false
+    },
+    {
+      "text": "I need a copy of my medical records",
+      "label": "not_medical",
+      "covered": false
+    },
+    {
+      "text": "my cat scratched my laptop screen",
+      "label": "not_medical",
+      "covered": false
+    },
+    {
+      "text": "how much does a consultation cost",
+      "label": "not_medical",
+      "covered": false
+    },
+    {
+      "text": "I am pregnant and bleeding",
+      "label": "obstetric",
+      "covered": false
+    },
+    {
+      "text": "I am pregnant and having contractions",
+      "label": "obstetric",
+      "covered": false
+    },
+    {
+      "text": "my waters have broken",
+      "label": "obstetric",
+      "covered": false
+    },
+    {
+      "text": "I am pregnant and the baby has stopped moving",
+      "label": "obstetric",
+      "covered": false
+    },
+    {
+      "text": "my baby has a rash and will not feed",
+      "label": "paediatric",
+      "covered": false
+    },
+    {
+      "text": "my three year old has been vomiting all night",
+      "label": "paediatric",
+      "covered": false
+    },
+    {
+      "text": "my child fell off the bed and is crying",
+      "label": "paediatric",
+      "covered": false
+    },
+    {
+      "text": "my toddler has a high temperature",
+      "label": "paediatric",
+      "covered": false
+    },
+    {
+      "text": "I swallowed too many tablets",
+      "label": "poisoning",
+      "covered": false
+    },
+    {
+      "text": "I think I have been poisoned",
+      "label": "poisoning",
+      "covered": false
+    },
+    {
+      "text": "I drank something I should not have",
+      "label": "poisoning",
+      "covered": false
+    },
+    {
+      "text": "I took an overdose",
+      "label": "poisoning",
+      "covered": false
+    },
+    {
+      "text": "my face has gone droopy on one side",
+      "label": "stroke",
+      "covered": false
+    },
+    {
+      "text": "I cannot move my arm and my speech is slurred",
+      "label": "stroke",
+      "covered": false
+    },
+    {
+      "text": "one side of my body has gone weak suddenly",
+      "label": "stroke",
+      "covered": false
+    },
+    {
+      "text": "I suddenly cannot speak properly",
+      "label": "stroke",
+      "covered": false
+    }
+  ]
+}

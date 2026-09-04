@@ -32,6 +32,7 @@ from ..core.schema import Complaint, Fact, FactSource, Tri, Urgency
 from ..llm.gemini import GeminiClient
 from ..llm.phrasing import Phraser
 from ..orchestrator.intake import IntakeOrchestrator, TurnResult
+from ..rag.retriever import Retriever
 from ..store.cases import CaseStore
 from ..store.hospital import HospitalDirectory
 from .notify import Notifier
@@ -72,7 +73,10 @@ class VitaServices:
         # Never fails. A missing key yields a client that reports OFFLINE.
         self.llm = GeminiClient(self.settings)
         self.phraser = Phraser(self.llm)
-        self.orchestrator = IntakeOrchestrator(self.kb, self.registry, self.llm, self.phraser)
+        self.retriever = Retriever(self.llm)
+        self.orchestrator = IntakeOrchestrator(
+            self.kb, self.registry, self.llm, self.phraser, self.retriever
+        )
 
         self.cases = CaseStore()
         self.hospital = HospitalDirectory()
@@ -91,6 +95,7 @@ class VitaServices:
             "mode": self.mode.value,
             "llm": self.llm.status(),
             "knowledge": self.kb.summary(),
+            "retrieval": self.retriever.status(),
             "agents": self.registry.describe(),
             "queue": self.cases.counts(),
             "notifications": {

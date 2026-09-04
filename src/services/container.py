@@ -39,6 +39,7 @@ from ..store.hospital import HospitalDirectory
 from ..store.requests import RequestStore
 from ..tools import ToolLayer
 from .ambulance import AmbulanceError, AmbulanceService
+from .medication import MedicationReader
 from .notify import Notifier
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,7 @@ class VitaServices:
         self.hospital = HospitalDirectory()
         self.notifier = Notifier()
         self.ambulance = AmbulanceService()
+        self.medications = MedicationReader(self.llm)
 
         self.red_flag_agent = RedFlagAgent()
         verify_coverage(self.red_flag_agent, self.kb.red_flags)
@@ -157,6 +159,54 @@ class VitaServices:
             self._on_finished(case)
 
         return result
+
+    def read_medication_photo(self, case_id: str, image: bytes, mime_type: str) -> dict[str, Any]:
+        """Read a photo of the patient's medication and record what it establishes.
+
+        The facts go in through the same tool the planner uses, so a drug read
+        off a packet is recorded exactly like a drug the patient named out loud -
+        same provenance, same validation, same rules.
+        """
+        case = self.get_case(case_id)
+        if case is None:
+            return {"error": f"no case {case_id!r}"}
+
+        reading = self.medications.read(image, mime_type)
+        if reading.error:
+            return {"error": reading.error, "reading": reading.as_dict()}
+
+        if reading.facts:
+            self.tools.call(
+                "record_facts",
+                {
+                    "case_id": case_id,
+                    "facts": [
+                        {
+                            "key": key,
+                            "value": value,
+                            "evidence": f"read from a photo of {reading.attribution.get(key, 'the packet')}",
+                        }
+                        for key, value in reading.facts.items()
+                    ],
+                },
+            )
+
+        case.medication_photos.append(reading.as_dict())
+        self.cases.save(case)
+        self.cases.audit(case_id, "medication_photo_read", detail=reading.summary())
+
+        for entry in reading.names:
+            printed = entry.get("name_as_printed", "")
+            if printed and case.patient_id:
+                self.memory.remember(
+                    patient_id=case.patient_id,
+                    case_id=case_id,
+                    kind=KIND_FACT,
+                    text=f"{case.patient_name or 'Patient'} takes {printed}"
+                         + (f" {entry.get('strength')}" if entry.get("strength") else "") + ".",
+                )
+
+        return {"case_id": case_id, "reading": reading.as_dict(), "summary": reading.summary()}
 
     # -- closing ---------------------------------------------------------
 

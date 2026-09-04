@@ -19,7 +19,7 @@
       "type": "boolean"
     },
     "nausea": {
-      "text": "Do you feel sick or nauseated, or have you vomited?",
+      "text": "Do you feel sick, or have you vomited?",
       "type": "boolean"
     },
     "fainting": {
@@ -139,11 +139,11 @@
       "type": "boolean"
     },
     "vomiting_blood": {
-      "text": "Have you thrown up blood, or something that looked like coffee grounds?",
+      "text": "Have you vomited blood, or something that looked like coffee grounds?",
       "type": "boolean"
     },
     "black_stool": {
-      "text": "Has your poo been black and sticky, or had blood in it?",
+      "text": "Have your stools been black and sticky, or had blood in them?",
       "type": "boolean"
     },
     "pregnancy": {

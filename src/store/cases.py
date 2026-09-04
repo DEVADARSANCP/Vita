@@ -169,7 +169,7 @@ class CaseStore:
         """
         sql = (
             "SELECT case_id, created_at, updated_at, status, complaint, urgency, "
-            "department, review, language FROM cases "
+            "department, review, language, patient_id, patient_name FROM cases "
         )
         params: list[Any] = []
         if status:
@@ -307,6 +307,7 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
         for t in (raw.get("turns") or [])
     ]
     case.clinical_impression = raw.get("clinical_impression", "")
+    case.medication_photos = list(raw.get("medication_photos") or [])
     case.asked_anything_else = bool(raw.get("asked_anything_else", False))
     case.state_history = list(raw.get("state_history") or [])
     case.patient_id = raw.get("patient_id", "")

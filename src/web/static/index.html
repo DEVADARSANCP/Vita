@@ -140,7 +140,13 @@
 
     <div class="composer" style="margin-top:14px" id="composer">
       <textarea id="input" rows="1" placeholder="Type your answer…"></textarea>
+      <button id="photo-btn" title="Send a photo of your medicine">📷</button>
       <button class="primary" id="send">Send</button>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
+    <div class="tiny muted" style="margin-top:6px">
+      Taking any medicine? Tap 📷 to send a photo of the packet — you do not need
+      to spell the name.
     </div>
 
     <div class="outcome panel" id="outcome" hidden>
@@ -336,6 +342,49 @@ async function send() {
   }
 }
 
+/* ---------- medication photo ----------
+   The patient photographs the packet instead of spelling a drug name they may
+   never have been able to pronounce. Gemini reads the printed text; a reference
+   table decides what the drug is. */
+
+$("photo-btn").onclick = () => $("photo-input").click();
+
+$("photo-input").onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file || !caseId) return;
+  event.target.value = "";
+
+  bubble("patient", `📷 ${file.name}`);
+  $("typing").hidden = false;
+  $("typing").textContent = "Reading the packet…";
+  $("photo-btn").disabled = $("send").disabled = true;
+
+  try {
+    const form = new FormData();
+    form.append("photo", file);
+    const res = await fetch(`/api/cases/${caseId}/medication-photo`, { method: "POST", body: form });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const data = await res.json();
+    const reading = data.reading || {};
+
+    if (!reading.readable || !(reading.medications || []).length) {
+      bubble("vita", "I could not read that clearly. You can try another photo, or just tell me the name if you know it.");
+    } else {
+      const names = reading.medications
+        .map((m) => [m.name_as_printed, m.strength].filter(Boolean).join(" "))
+        .filter(Boolean);
+      bubble("vita", `Thank you — I can see ${names.join(", ")}. I have added that to your record.`);
+    }
+  } catch (err) {
+    bubble("vita", `I could not read that photo (${err.message}). You can tell me the name instead if you know it.`);
+  } finally {
+    $("typing").hidden = true;
+    $("typing").textContent = "VITA is reading your message…";
+    $("photo-btn").disabled = $("send").disabled = false;
+    $("input").focus();
+  }
+};
+
 $("send").onclick = send;
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
@@ -347,13 +396,13 @@ $("input").addEventListener("input", (e) => {
 
 /* ---------- outcome ---------- */
 
-function list(items, className) {
+function list(items, className, emptyText) {
   const ul = document.createElement("ul");
   ul.className = `facts ${className || ""}`;
   if (!items.length) {
     const li = document.createElement("li");
     li.className = "muted";
-    li.textContent = "Nothing recorded.";
+    li.textContent = emptyText || "None.";
     ul.append(li);
     return ul;
   }
@@ -422,14 +471,16 @@ function renderOutcome(note) {
     body.append(section("Why", box));
   }
 
-  body.append(section("You told us", list(note.patient_reported)));
+  body.append(section("You told us", list(note.patient_reported, null,
+    "Nothing was recorded from your description.")));
   if (note.established_by_followup.length) {
     body.append(section("Established by our questions", list(note.established_by_followup)));
   }
   if (note.recalled_from_records.length) {
     body.append(section("From your previous visit", list(note.recalled_from_records)));
   }
-  body.append(section("Still unknown", list(note.unknown, "unknown-list")));
+  body.append(section("We could not check", list(note.unknown, "unknown-list",
+    "We were able to check everything the rules needed.")));
 
   if (["HIGH", "CRITICAL"].includes(rec.urgency)) renderTransport(body, rec.urgency);
 

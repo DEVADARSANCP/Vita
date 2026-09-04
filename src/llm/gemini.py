@@ -274,6 +274,58 @@ class GeminiClient:
         self.model = remaining[0]
         return True
 
+    def read_image_json(
+        self,
+        image: bytes,
+        mime_type: str,
+        prompt: str,
+        schema: dict[str, Any],
+        *,
+        system_instruction: str = "",
+    ) -> LLMResult:
+        """Read an image and return structured JSON about it.
+
+        Used for medication photographs. Gemini is multimodal, so a picture of a
+        blister pack needs no OCR engine, no model weights and no second network
+        dependency - which is the difference between this working on a judge's
+        clean machine and not.
+
+        What comes back is only ever the text printed on the packet. Deciding
+        what a drug is *for* stays a table lookup, because a model that decides
+        for itself whether something is a blood thinner is a model that can be
+        wrong about warfarin.
+        """
+        if not self.available:
+            return LLMResult(ok=False, error=self._unavailable_reason or "model unavailable")
+
+        started = time.monotonic()
+        try:
+            config = self._types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=schema,
+                temperature=0.0,
+                system_instruction=system_instruction or None,
+                http_options=self._types.HttpOptions(timeout=int(CALL_TIMEOUT_SECONDS * 1000)),
+            )
+            response = self._client.models.generate_content(
+                model=self.model,
+                contents=[
+                    self._types.Part.from_bytes(data=image, mime_type=mime_type),
+                    prompt,
+                ],
+                config=config,
+            )
+            data = json.loads((response.text or "").strip())
+            self._health.record(True)
+            return LLMResult(ok=True, data=data, attempts=1,
+                             elapsed_ms=int((time.monotonic() - started) * 1000))
+        except Exception as exc:  # noqa: BLE001
+            error = f"{type(exc).__name__}: {exc}"
+            logger.warning("image read failed: %s", error)
+            self._health.record(False, error)
+            return LLMResult(ok=False, error=error,
+                             elapsed_ms=int((time.monotonic() - started) * 1000))
+
     # -- embeddings ------------------------------------------------------
 
     def embed(self, texts: list[str], *, task: str = "RETRIEVAL_DOCUMENT") -> list[list[float]] | None:

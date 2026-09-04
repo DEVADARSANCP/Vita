@@ -40,6 +40,11 @@ from .core.schema import Complaint, Fact, FactSource, MatchState, Tri, Urgency
 
 logger = logging.getLogger(__name__)
 
+#: How many times one fact may be asked about before it is treated as
+#: unanswerable and dropped from the open questions. Two is a clarification; a
+#: third is an interrogation.
+MAX_ASKS_PER_FACT = 2
+
 
 def _string(description: str, *, required: bool = False) -> dict[str, Any]:
     spec: dict[str, Any] = {"type": "string", "description": description}
@@ -352,6 +357,7 @@ class ToolLayer:
         evaluations = evaluate_all(self.services.kb.rules_for(case.complaint), case.facts)
         questions: list[dict[str, Any]] = []
         seen: set[str] = set()
+        spent: list[str] = []
 
         # Complaint-specific rules first, general modifiers last. Both are
         # evaluated, but a patient who came in breathless should be asked about
@@ -367,6 +373,16 @@ class ToolLayer:
                 if condition.fact in seen:
                     continue
                 seen.add(condition.fact)
+
+                asked = case.asked_counts.get(condition.fact, 0)
+                if asked >= MAX_ASKS_PER_FACT:
+                    # Asked twice and still not established. Dropping it from the
+                    # list is what lets the conversation move on - a patient who
+                    # could not answer twice will not answer a third time, and the
+                    # fact stays unknown, which the rules handle safely.
+                    spent.append(condition.fact)
+                    continue
+
                 question = self.services.kb.question(condition.fact)
                 questions.append(
                     {
@@ -374,11 +390,19 @@ class ToolLayer:
                         "wanted_by_rule": evaluation.rule.rule_id,
                         "rule_urgency": evaluation.rule.urgency.value,
                         "suggested_wording": question.text if question else "",
-                        "already_asked": case.asked_counts.get(condition.fact, 0),
+                        "already_asked": asked,
                     }
                 )
 
-        return {"case_id": case_id, "open_questions": questions[:12]}
+        return {
+            "case_id": case_id,
+            "open_questions": questions[:12],
+            "already_asked_and_unresolved": spent,
+            "note": (
+                "Anything in already_asked_and_unresolved has been asked twice "
+                "without success. Do not ask about it again; let it stay unknown."
+            ),
+        }
 
     def _get_case_facts(self, case_id: str) -> dict[str, Any]:
         case = self._case_or_error(case_id)

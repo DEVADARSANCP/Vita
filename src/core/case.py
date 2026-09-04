@@ -136,6 +136,9 @@ class Case:
     #: the patient, and clearly an AI impression rather than a diagnosis.
     clinical_impression: str = ""
 
+    #: Medication photographs the patient sent, and what was read from each.
+    medication_photos: list[dict[str, Any]] = field(default_factory=list)
+
     #: Created by the evaluation harness rather than by a patient. Excluded
     #: from cross-visit recall, because otherwise every eval run leaves fever
     #: cases behind that make the next run's fever scenario trip GEN-01 - the
@@ -283,6 +286,7 @@ class Case:
             "scope_verdict": self.scope_verdict,
             "scope_uncertain": self.scope_uncertain,
             "clinical_impression": self.clinical_impression,
+            "medication_photos": self.medication_photos,
             "asked_anything_else": self.asked_anything_else,
             "state_history": self.state_history,
             "synthetic": self.synthetic,

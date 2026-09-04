@@ -84,7 +84,8 @@ WHAT YOU DO
 
 HOW YOU TALK
 This matters as much as what you ask. A patient who has to work out what you mean will answer the wrong question, and a frightened or unwell person has no patience for it.
-- Use the words an ordinary person uses. "0 to 10", not "nought to ten". "Throw up", not "vomit". "Poo", not "stool". "Blood-thinning medicine", not "anticoagulants". "Hard to breathe", not "dyspnoea".
+- Use the words an ordinary person uses. "0 to 10", not "nought to ten". "Blood-thinning medicine", not "anticoagulants". "Hard to breathe", not "dyspnoea". "Stiff neck", not "meningism".
+- Everyday clinical words a patient would say to a nurse are fine - vomit, stool, rash, dizzy. It is the technical vocabulary and the formal register to avoid, not plain medical nouns.
 - Short sentences. One idea per sentence.
 - No medical terms at all unless the patient used them first.
 - No formal or old-fashioned phrasing. Write the way you would speak to someone across a desk.
@@ -93,7 +94,14 @@ This matters as much as what you ask. A patient who has to work out what you mea
 - Record what they tell you with record_facts, quoting their words.
 - Call tools when you want to know something: what the rules are still waiting on, what this patient came in with last time, what hospital policy says.
 - Treat the open questions as a guide, not a script. Ask the ones that fit what the patient described first. The general ones - age, pregnancy, whether they have been in recently - still matter and should still be asked, just after the ones about the problem they actually came in with.
-- Never ask the same thing twice. Read the conversation above before choosing a question.
+
+NEVER REPEAT YOURSELF
+This is the fastest way to sound like a machine, and it is the thing patients hate most.
+- Read the conversation above before you write anything. If you have already asked something, you may not ask it again in the same words.
+- A partial or sideways answer is still an answer. "It happens when I cough" tells you something. Say what you took from it, then ask the specific bit you are still missing, phrased differently. Do not re-ask the original question.
+  Example. You asked whether they can say a whole sentence without stopping for breath. They said "it happens during cough". Do NOT ask it again. Say something like: "Got it, so the cough sets it off. When you are not coughing, can you talk normally?"
+- If you have asked about something twice and still cannot establish it, let it go. Record nothing, move on to something else, and let it stay unknown. An unknown fact is handled safely downstream; a patient asked the same question three times is not.
+- The open questions list marks anything you have already asked. Treat those as spent.
 - When you conclude you MUST write a clinical_impression. A conclusion without one is incomplete.
 - If this patient keeps returning with the same unresolved problem, or is deteriorating between visits, say so and use request_admission.
 
@@ -145,6 +153,14 @@ _RESPONSE_SCHEMA = {
             "type": "string",
             "description": "What to say to the patient. Usually one question. Empty if concluding.",
         },
+        "asking_about": {
+            "type": "string",
+            "description": (
+                "The fact key your question is trying to establish, e.g. "
+                "'speaking_full_sentences'. Empty if you are not asking about a "
+                "specific fact. Used to notice when a question is being repeated."
+            ),
+        },
         "conclude": {
             "type": "boolean",
             "description": "True when you have enough and the intake should close.",
@@ -173,6 +189,7 @@ class PlannerTurn:
     tools_called: list[str] = field(default_factory=list)
     facts_recorded: list[str] = field(default_factory=list)
     red_flags: list[str] = field(default_factory=list)
+    asking_about: str = ""
     converged: bool = False
     notes: list[str] = field(default_factory=list)
 
@@ -286,8 +303,13 @@ class TriagePlanner:
             if self._converged(case, turn) or case.turn_number >= MAX_TURNS:
                 return self._conclude(case, turn, impression=impression)
 
-            case.add_vita_turn(reply)
+            asking_about = str(data.get("asking_about", "")).strip()
+            if asking_about:
+                case.asked_counts[asking_about] = case.asked_counts.get(asking_about, 0) + 1
+
+            case.add_vita_turn(reply, asked_about=asking_about)
             turn.reply = reply
+            turn.asking_about = asking_about
             return turn
 
         return self._conclude(case, turn, impression="")

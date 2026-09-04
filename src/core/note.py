@@ -199,7 +199,9 @@ def render_text(note: dict[str, Any]) -> str:
         lines.append("  None. No rule matched the established facts.")
 
     lines += ["", "PATIENT REPORTED"]
-    lines += [f"  - {item}" for item in note["patient_reported"]] or ["  - Nothing recorded."]
+    lines += [f"  - {item}" for item in note["patient_reported"]] or [
+        "  - Nothing recorded from the opening description."
+    ]
 
     lines += ["", "ESTABLISHED THROUGH FOLLOW-UP"]
     lines += [f"  - {item}" for item in note["established_by_followup"]] or [
@@ -210,8 +212,10 @@ def render_text(note: dict[str, Any]) -> str:
         lines += ["", "FROM PREVIOUS VISITS"]
         lines += [f"  - {item}" for item in note["recalled_from_records"]]
 
-    lines += ["", "UNKNOWN"]
-    lines += [f"  - {item}" for item in note["unknown"]] or ["  - Nothing outstanding."]
+    lines += ["", "COULD NOT BE ESTABLISHED"]
+    lines += [f"  - {item}" for item in note["unknown"]] or [
+        "  - Everything the rules needed was established."
+    ]
 
     if note["contradictions"]:
         lines += ["", "CONFLICTING ANSWERS - NOT RESOLVED BY VITA"]

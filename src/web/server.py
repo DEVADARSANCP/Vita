@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -205,6 +205,21 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
         if case is None:
             raise HTTPException(status_code=404, detail=f"no case {case_id}")
         return JSONResponse(case.as_dict(full=False))
+
+    @app.post("/api/cases/{case_id}/medication-photo")
+    async def medication_photo(case_id: str, photo: UploadFile = File(...)) -> JSONResponse:
+        """Read a photo of the patient's medication.
+
+        Gemini reads the packet; the reference table decides what the drug is.
+        The patient never has to spell a drug name they cannot pronounce.
+        """
+        image = await photo.read()
+        result = services.read_medication_photo(
+            case_id, image, photo.content_type or "image/jpeg"
+        )
+        if "error" in result and "reading" not in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return JSONResponse(result)
 
     # -- approval queue ----------------------------------------------------
 

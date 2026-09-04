@@ -178,9 +178,9 @@ async function api(path, options) {
 }
 const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 const section = (title, node) => { const w = el("div", "section"); w.append(el("h4", null, title), node); return w; };
-function list(items, cls) {
+function list(items, cls, emptyText) {
   const ul = el("ul", `facts ${cls || ""}`);
-  if (!items || !items.length) { ul.append(el("li", "muted", "Nothing recorded.")); return ul; }
+  if (!items || !items.length) { ul.append(el("li", "muted", emptyText || "None.")); return ul; }
   for (const i of items) ul.append(el("li", null, i));
   return ul;
 }
@@ -401,9 +401,9 @@ async function renderCase(d) {
 
   if (note.clinical_impression) {
     const box = el("div", "impression");
-    box.append(el("span", "tag", "AI impression — not a diagnosis"),
+    box.append(el("span", "tag", "Assistant’s read of the case · for clinician review"),
                document.createTextNode(note.clinical_impression));
-    d.append(section("What the assistant makes of it", box));
+    d.append(section("Assistant’s assessment", box));
   }
 
   const said = (note.conversation || []).filter((t) => t.role === "patient");
@@ -431,13 +431,34 @@ async function renderCase(d) {
     d.append(section("Rules applied", el("div", "muted small", "No rule matched.")));
   }
 
-  d.append(section("Patient reported", list(note.patient_reported)));
-  d.append(section("Established by follow-up", list(note.established_by_followup)));
+  if ((kase.medication_photos || []).length) {
+    const box = el("div");
+    for (const ph of kase.medication_photos) {
+      for (const m of ph.medications || []) {
+        const row = el("div", "reason");
+        row.append(el("div", null, [m.name_as_printed, m.strength].filter(Boolean).join(" ")));
+        if (m.generic_name) row.append(el("div", "cond", m.generic_name));
+        const est = Object.keys(ph.facts || {});
+        if (est.length) row.append(el("div", "src", `establishes: ${est.join(", ")}`));
+        box.append(row);
+      }
+      if ((ph.unrecognised || []).length) {
+        box.append(el("div", "src", `read but not in the reference table: ${ph.unrecognised.join(", ")}`));
+      }
+    }
+    d.append(section("Medication read from a photo", box));
+  }
+
+  d.append(section("Patient reported", list(note.patient_reported, null,
+    "Nothing recorded from the opening description.")));
+  d.append(section("Established by follow-up", list(note.established_by_followup, null,
+    "No follow-up answers recorded.")));
   if (note.memory && note.memory.length) {
     d.append(section("Remembered from previous visits",
       list(note.memory.map((m) => `[${m.kind}] ${m.text}`))));
   }
-  d.append(section("Unknown", list(note.unknown, "unknown-list")));
+  d.append(section("Could not be established", list(note.unknown, "unknown-list",
+    "Everything the rules needed was established.")));
   if (note.contradictions && note.contradictions.length) {
     d.append(section("Conflicting answers — not resolved by VITA", list(note.contradictions, "unknown-list")));
   }

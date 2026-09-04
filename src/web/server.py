@@ -223,6 +223,27 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
     def ambulance(case_id: str = "") -> JSONResponse:
         return JSONResponse(services.tools.call("get_ambulance_status", {"case_id": case_id}))
 
+    # -- evaluation --------------------------------------------------------
+
+    @app.get("/api/eval")
+    def evaluate(conversation: bool = False, limit: int = 0) -> JSONResponse:
+        """Run the evaluation suite and report what happened.
+
+        The deterministic tier always runs: no model, no network, milliseconds,
+        and it must pass at 100%. The conversational tier is opt-in because each
+        turn is a model call and a free-tier key allows a handful per minute -
+        exhausting a judge's quota to prove a point is a poor trade.
+
+        The headline is under-triage count, not accuracy. Over-triage costs a
+        clinician's time; under-triage sends home someone who should not have
+        gone, and averaging the two into one percentage hides the only failure
+        that hurts a patient.
+        """
+        from ..eval.runner import run
+
+        report = run(services, include_conversation=conversation, limit=limit)
+        return JSONResponse(report.as_dict())
+
     # -- tool surface ------------------------------------------------------
 
     @app.get("/api/tools")
@@ -263,6 +284,10 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
     @app.get("/dashboard")
     def dashboard_page() -> FileResponse:
         return FileResponse(STATIC_DIR / "dashboard.html")
+
+    @app.get("/evaluation")
+    def evaluation_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "evaluation.html")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

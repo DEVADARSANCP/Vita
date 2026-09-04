@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VITA — Evaluation</title>
+<link rel="stylesheet" href="/static/vita.css">
+<style>
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 20px 48px; }
+
+  .headline { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat {
+    padding: 12px 16px; border-radius: 10px; background: var(--panel);
+    border: 1px solid var(--line); min-width: 132px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 26px; font-weight: 660; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .stat .sub { font-size: 11.5px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+  .stat.primary { border-color: var(--low); }
+  .stat.primary .n { color: var(--low); }
+  .stat.primary.bad { border-color: var(--critical); }
+  .stat.primary.bad .n { color: var(--critical); }
+
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 18px 0 6px; }
+
+  .cat { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+  .cat span {
+    font-size: 12px; padding: 4px 10px; border-radius: 6px;
+    background: var(--panel-2); border: 1px solid var(--line);
+  }
+  .cat span b { font-variant-numeric: tabular-nums; }
+
+  td.res { white-space: nowrap; font-weight: 650; font-size: 12px; }
+  td.res.pass { color: var(--low); }
+  td.res.fail { color: var(--critical); }
+  .why { color: var(--critical); font-size: 12px; margin-top: 3px; }
+  tbody tr { cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">VITA <small>Evaluation</small></div>
+  <div class="spacer"></div>
+  <a class="navlink" href="/dashboard">← Dashboard</a>
+  <a class="navlink" href="/">Patient view</a>
+</div>
+
+<div class="wrap">
+
+  <div class="panel" style="padding:16px;margin-bottom:18px">
+    <p class="small muted" style="margin:0 0 6px">
+      VITA carries its own exam paper. These scenarios run through the real
+      code — the same rule engine, the same intake loop — so this page is a
+      result, not a claim.
+    </p>
+    <p class="small muted" style="margin:0">
+      The number that matters is <strong>under-triage</strong>, and it must be
+      zero. Over-triage costs a clinician a few minutes; under-triage sends home
+      a patient who should have stayed, and in the record it looks exactly like
+      a case that was genuinely low risk. Escalations are correct behaviour, not
+      failures.
+    </p>
+  </div>
+
+  <div class="headline" id="headline"></div>
+
+  <div class="controls">
+    <button class="primary" id="run">Run evaluation</button>
+    <button id="run-full">Include conversation tier</button>
+    <span class="tiny muted" id="timing"></span>
+  </div>
+  <div class="tiny muted">
+    The deterministic tier uses no model and finishes in milliseconds. The
+    conversation tier calls Gemini once per turn, so on a free-tier key it is
+    slow and consumes quota — which is why it is opt-in.
+  </div>
+
+  <div class="cat" id="categories"></div>
+
+  <div class="panel table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Case</th><th>Scenario</th><th>Category</th>
+          <th>Expected</th><th>Actual</th><th>Rules</th><th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (t, c, x) => {
+  const n = document.createElement(t);
+  if (c) n.className = c;
+  if (x !== undefined) n.textContent = x;
+  return n;
+};
+
+function stat(target, value, label, sub, opts) {
+  const o = opts || {};
+  const box = el("div", `stat${o.primary ? " primary" : ""}${o.bad ? " bad" : ""}`);
+  box.append(el("div", "n", String(value)), el("div", "k", label));
+  if (sub) box.append(el("div", "sub", sub));
+  target.append(box);
+}
+
+async function runEval(conversation) {
+  const buttons = [$("run"), $("run-full")];
+  buttons.forEach((b) => { b.disabled = true; });
+  $("timing").textContent = conversation
+    ? "running — the conversation tier takes a few minutes"
+    : "running…";
+
+  try {
+    const res = await fetch(`/api/eval?conversation=${conversation ? "true" : "false"}`);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    render(await res.json());
+  } catch (err) {
+    $("timing").textContent = `failed: ${err.message}`;
+  } finally {
+    buttons.forEach((b) => { b.disabled = false; });
+  }
+}
+
+function render(report) {
+  const h = report.headline;
+
+  const head = $("headline");
+  head.replaceChildren();
+  stat(head, h.under_triaged, "Under-triaged", "graded below what was expected",
+       { primary: true, bad: h.under_triaged > 0 });
+  stat(head, `${h.passed}/${h.total}`, "Passed", "");
+  stat(head, h.over_triaged, "Over-triaged", "costs time, not safety");
+  stat(head, h.escalated, "Escalated", "handed to a clinician, as intended");
+
+  const cats = $("categories");
+  cats.replaceChildren();
+  for (const [name, bucket] of Object.entries(report.by_category).sort()) {
+    const chip = el("span");
+    chip.append(document.createTextNode(`${name.replace(/_/g, " ")} `));
+    chip.append(el("b", null, `${bucket.passed}/${bucket.total}`));
+    cats.append(chip);
+  }
+
+  const rows = $("rows");
+  rows.replaceChildren();
+  for (const r of report.results) {
+    const tr = el("tr");
+
+    const name = el("td");
+    name.append(el("div", null, r.name));
+    for (const failure of r.failures) name.append(el("div", "why", failure));
+
+    tr.append(
+      el("td", "tiny", r.id),
+      name,
+      el("td", "tiny muted", r.category.replace(/_/g, " ")),
+      el("td", "tiny", r.expected_urgency || "—"),
+      el("td", "tiny", r.actual_urgency || "—"),
+      el("td", "tiny", r.actual_rules.join(", ") || "—"),
+      el("td", `res ${r.passed ? "pass" : "fail"}`, r.passed ? "PASS" : "FAIL")
+    );
+    rows.append(tr);
+  }
+
+  $("timing").textContent =
+    `${report.total} scenarios in ${report.elapsed_ms} ms · ${report.started_at}`;
+}
+
+$("run").onclick = () => runEval(false);
+$("run-full").onclick = () => runEval(true);
+runEval(false);
+</script>
+</body>
+</html>

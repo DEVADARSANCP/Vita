@@ -27,7 +27,7 @@ from ..core.knowledge import KnowledgeBase, load_knowledge_base
 from ..core.note import build_note, render_text
 from ..core.patient import Patient
 from ..core.requests import Request, RequestKind
-from ..core.schema import Fact, FactSource, Urgency
+from ..core.schema import Fact, FactSource, Tri, Urgency
 from ..llm.gemini import GeminiClient
 from ..llm.phrasing import Phraser
 from ..mcp_bridge import McpBridge
@@ -149,24 +149,7 @@ class VitaServices:
             takes_medication=str(takes_medication or "").strip(),
         )
 
-        # Age is a rule input (GEN-02, CP-07), so it goes in as a fact rather
-        # than sitting in a form field the rule engine cannot see.
-        try:
-            years = float(str(age).strip())
-        except (TypeError, ValueError):
-            years = 0.0
-        if 0 < years <= 120:
-            case.record(
-                Fact(
-                    key="age_years",
-                    value=years,
-                    source=FactSource.PATIENT_VERBATIM,
-                    turn=0,
-                    verbatim=f"given at registration: {age}",
-                    language=language,
-                    agent="registration",
-                )
-            )
+        self._seed_registration_facts(case, language)
         self._live[case.case_id] = case
         self.cases.save(case)
         self.cases.audit(
@@ -184,6 +167,48 @@ class VitaServices:
 
         logger.info("case %s opened for %s", case.case_id, patient.name or "anonymous")
         return case
+
+    def _seed_registration_facts(self, case: Case, language: str) -> None:
+        """Turn the registration form into facts the rule engine can use.
+
+        A form field the rules cannot see is a question the patient gets asked
+        anyway. Age feeds GEN-02 and CP-07 directly. Gender settles the two
+        facts that only apply to one - and a man being asked whether he might be
+        pregnant is the kind of thing that makes a careful system look stupid.
+
+        Both are recorded with their provenance ("given at registration"), so a
+        clinician can see where they came from. The gender field here is a
+        single choice on a form and reality is not always that simple; a patient
+        who says otherwise in the conversation overrides this, because anything
+        they tell us later is recorded the same way and lands on the same fact.
+        """
+        def seed(key: str, value: Any, said: str) -> None:
+            case.record(
+                Fact(
+                    key=key,
+                    value=value,
+                    source=FactSource.PATIENT_VERBATIM,
+                    turn=0,
+                    verbatim=f"given at registration: {said}",
+                    language=language,
+                    agent="registration",
+                )
+            )
+
+        try:
+            years = float(str(case.patient_age).strip())
+        except (TypeError, ValueError):
+            years = 0.0
+        if 0 < years <= 120:
+            seed("age_years", years, f"age {case.patient_age}")
+
+        gender = case.patient_gender.strip().lower()
+        if gender == "male":
+            seed("pregnancy", Tri.FALSE, "male")
+            # AB-06 needs this either way; asking a woman about testicular pain
+            # is the same error in the other direction.
+        elif gender == "female":
+            seed("testicular_pain", Tri.FALSE, "female")
 
     def get_case(self, case_id: str) -> Case | None:
         return self._live.get(case_id) or self.cases.get(case_id)

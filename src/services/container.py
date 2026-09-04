@@ -27,7 +27,7 @@ from ..core.knowledge import KnowledgeBase, load_knowledge_base
 from ..core.note import build_note, render_text
 from ..core.patient import Patient
 from ..core.requests import Request, RequestKind
-from ..core.schema import Urgency
+from ..core.schema import Fact, FactSource, Urgency
 from ..llm.gemini import GeminiClient
 from ..llm.phrasing import Phraser
 from ..mcp_bridge import McpBridge
@@ -119,11 +119,23 @@ class VitaServices:
 
     # -- intake ----------------------------------------------------------
 
-    def start_case(self, name: str = "", language: str = "en", *, synthetic: bool = False) -> Case:
-        """Open a case for a named patient.
+    def start_case(
+        self,
+        name: str = "",
+        language: str = "en",
+        *,
+        age: str = "",
+        gender: str = "",
+        past_history: str = "",
+        takes_medication: str = "",
+        synthetic: bool = False,
+    ) -> Case:
+        """Open a case, with the details a desk would take before anything else.
 
-        The name is the whole of identity, and it is what links this visit to
-        the last one - which is what makes memory and history worth having.
+        Name, age, gender, past problems and whether they are on any medication -
+        asked once, on a form, because they are the same every time and nobody
+        wants them drawn out of a conversation one at a time. The name is also
+        what links this visit to the last one.
         """
         patient = Patient.from_name(name)
         case = Case(
@@ -131,7 +143,30 @@ class VitaServices:
             synthetic=synthetic,
             patient_id=patient.patient_id,
             patient_name=patient.name,
+            patient_age=str(age or "").strip(),
+            patient_gender=str(gender or "").strip(),
+            past_history=str(past_history or "").strip(),
+            takes_medication=str(takes_medication or "").strip(),
         )
+
+        # Age is a rule input (GEN-02, CP-07), so it goes in as a fact rather
+        # than sitting in a form field the rule engine cannot see.
+        try:
+            years = float(str(age).strip())
+        except (TypeError, ValueError):
+            years = 0.0
+        if 0 < years <= 120:
+            case.record(
+                Fact(
+                    key="age_years",
+                    value=years,
+                    source=FactSource.PATIENT_VERBATIM,
+                    turn=0,
+                    verbatim=f"given at registration: {age}",
+                    language=language,
+                    agent="registration",
+                )
+            )
         self._live[case.case_id] = case
         self.cases.save(case)
         self.cases.audit(
@@ -139,6 +174,14 @@ class VitaServices:
             "case_opened",
             detail=f"patient={patient.name or 'anonymous'} language={language}",
         )
+        if case.past_history:
+            self.memory.remember(
+                patient_id=case.patient_id,
+                case_id=case.case_id,
+                kind=KIND_FACT,
+                text=f"{patient.name or 'Patient'} reports past history: {case.past_history}",
+            )
+
         logger.info("case %s opened for %s", case.case_id, patient.name or "anonymous")
         return case
 
@@ -493,7 +536,25 @@ class VitaServices:
         note["notifications"] = [n.as_dict() for n in self.notifier.for_case(case_id)]
         note["requests"] = [r.as_dict() for r in self.requests.list(case_id=case_id)]
         note["audit"] = self.cases.trail(case_id)
-        note["patient"] = {"patient_id": case.patient_id, "name": case.patient_name}
+        note["patient"] = {
+            "patient_id": case.patient_id,
+            "name": case.patient_name,
+            "age": case.patient_age,
+            "gender": case.patient_gender,
+            "past_history": case.past_history,
+            "takes_medication": case.takes_medication,
+        }
+
+        # Who the patient is told to see. Named so the closing message is
+        # concrete, and flagged as provisional because the desk reassigns.
+        doctor = self.hospital.on_call_for(
+            case.decision.department if case.decision else ""
+        )
+        note["assigned_doctor"] = (
+            {"name": doctor.name, "department": doctor.department, "specialty": doctor.specialty}
+            if doctor
+            else None
+        )
         note["memory"] = [
             m.as_dict() for m in self.memory.recall(patient_id=case.patient_id, limit=6)
         ]

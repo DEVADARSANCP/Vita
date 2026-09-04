@@ -6,78 +6,59 @@
 <title>VITA — Patient Intake</title>
 <link rel="stylesheet" href="/static/vita.css">
 <style>
-  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; }
+  .wrap { max-width: 660px; margin: 0 auto; padding: 22px 20px 48px; }
 
-  .intro { text-align: center; padding: 40px 0 28px; }
-  .intro h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .intro p  { color: var(--muted); margin: 0; }
+  .intro { text-align: center; padding: 26px 0 22px; }
+  .intro h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .intro p { color: var(--muted); margin: 0; }
 
-  .chat { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+  .form { display: grid; gap: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
+  .field label .opt { font-weight: 400; color: var(--muted); }
+  .field input, .field select, .field textarea { width: 100%; }
+  .field textarea { resize: vertical; min-height: 62px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+  .choice { display: flex; gap: 8px; }
+  .choice button { flex: 1; padding: 9px; font-size: 14px; }
+  .choice button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+  .chat { display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0; }
   .msg { display: flex; }
   .msg.patient { justify-content: flex-end; }
-
-  .bubble {
-    max-width: 82%;
-    padding: 11px 14px;
-    border-radius: 12px;
-    line-height: 1.5;
-  }
-  .msg.vita .bubble    { background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .bubble { max-width: 82%; padding: 11px 14px; border-radius: 13px; line-height: 1.55; }
+  .msg.vita .bubble { background: var(--panel-2); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
   .msg.patient .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
-
-  .why {
-    margin-top: 7px;
-    font-size: 11.5px;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
 
   .composer { display: flex; gap: 8px; align-items: flex-end; }
   .composer textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; }
+  .typing { color: var(--muted); font-size: 13px; font-style: italic; margin-top: 8px; }
 
-  .setup { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
-
-  .examples { margin-top: 28px; }
-  .examples h4 {
-    margin: 0 0 10px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    color: var(--muted); font-weight: 650; text-align: center;
+  .status {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 13px 15px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--panel); margin-bottom: 13px;
   }
-  .examples .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
-  .example {
-    text-align: left; padding: 11px 13px; line-height: 1.45; font-size: 13.5px;
-    border-radius: 8px; cursor: pointer;
-  }
-  .example b { display: block; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
-               color: var(--muted); font-weight: 650; margin-bottom: 4px; }
+  .status .k { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 650; }
+  .status .dept { font-weight: 620; }
+  .status .full { flex-basis: 100%; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 
-  .outcome { margin-top: 24px; }
-  .outcome .headline {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line);
-  }
-  .outcome .headline .dept { font-weight: 600; }
-  .section { margin-top: 18px; }
-  .section h4 {
-    margin: 0 0 8px; font-size: 11px; letter-spacing: 0.06em;
-    text-transform: uppercase; color: var(--muted); font-weight: 650;
-  }
-  .reason { padding: 10px 0; border-bottom: 1px solid var(--line-2); }
-  .reason:last-child { border-bottom: none; }
-  .reason .src { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card { border: 1px solid var(--line); border-radius: 11px; padding: 15px; background: var(--panel); margin-bottom: 11px; }
+  .card .k { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 650; margin-bottom: 5px; }
+  .card .v { font-size: 17px; font-weight: 620; }
+  .card .note { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
 
-  .typing { color: var(--muted); font-size: 13px; font-style: italic; }
-
-  .transport { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .transport .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .transport input { flex: 1; min-width: 180px; }
-  .ticket { margin-top: 12px; }
-  .ticket dl { display: grid; grid-template-columns: 130px 1fr; gap: 5px 14px; margin: 0; font-size: 13px; }
+  .transport input { flex: 1; min-width: 170px; }
+  .ticket dl { display: grid; grid-template-columns: 118px 1fr; gap: 5px 14px; margin: 8px 0 0; font-size: 13.5px; }
   .ticket dt { color: var(--muted); }
-  .ticket dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .ticket dd { margin: 0; }
+
+  .examples { margin-top: 24px; }
+  .examples h4 { margin: 0 0 9px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 650; text-align: center; }
+  .examples .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 8px; }
+  .example { text-align: left; padding: 10px 12px; line-height: 1.45; font-size: 13px; border-radius: 8px; cursor: pointer; }
+  .example b { display: block; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 650; margin-bottom: 3px; }
 </style>
 </head>
 <body>
@@ -91,45 +72,88 @@
 
 <div class="wrap">
 
-  <div id="start">
+  <!-- 1. registration -->
+  <div id="register">
     <div class="intro">
-      <h1>How can we help you today?</h1>
-      <p>
-        Tell us your name so we can find your earlier visits, then describe what
-        is troubling you in your own words. Any language.
-      </p>
+      <h1>Welcome</h1>
+      <p>A few details first, then we will ask what brought you in.</p>
     </div>
-    <div class="setup">
-      <input type="text" id="pname" placeholder="Your name" autocomplete="name"
-             style="min-width:190px" aria-label="Your name">
-      <select id="language">
-        <option value="en">English</option>
-        <option value="ml">മലയാളം — Malayalam</option>
-        <option value="hi">हिन्दी — Hindi</option>
-        <option value="ta">தமிழ் — Tamil</option>
-        <option value="bn">বাংলা — Bengali</option>
-      </select>
-      <button class="primary" id="begin">Begin intake</button>
+
+    <div class="panel" style="padding:18px">
+      <div class="form">
+        <div class="field">
+          <label for="f-name">Your name</label>
+          <input type="text" id="f-name" autocomplete="name" placeholder="Full name">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="f-age">Age</label>
+            <input type="number" id="f-age" min="0" max="120" inputmode="numeric" placeholder="Years">
+          </div>
+          <div class="field">
+            <label for="f-gender">Gender</label>
+            <select id="f-gender">
+              <option value="">Prefer not to say</option>
+              <option>Female</option>
+              <option>Male</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-history">Any past surgery or ongoing health problem?
+            <span class="opt">— leave blank if none</span></label>
+          <textarea id="f-history" placeholder="For example: heart bypass in 2019, asthma, diabetes"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Are you taking any medicine at the moment?</label>
+          <div class="choice" id="f-meds">
+            <button type="button" data-v="yes">Yes</button>
+            <button type="button" data-v="no">No</button>
+            <button type="button" data-v="unsure">Not sure</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-lang">Language you would like to use</label>
+          <select id="f-lang">
+            <option value="en">English</option>
+            <option value="ml">മലയാളം — Malayalam</option>
+            <option value="hi">हिन्दी — Hindi</option>
+            <option value="ta">தமிழ் — Tamil</option>
+            <option value="bn">বাংলা — Bengali</option>
+          </select>
+        </div>
+
+        <button class="primary" id="begin" style="padding:11px">Continue</button>
+      </div>
     </div>
+
     <div class="examples">
-      <h4>Or try one of these</h4>
+      <h4>Or try a ready-made patient</h4>
       <div class="grid" id="examples"></div>
     </div>
 
-    <div id="offline-note" style="margin-top:20px" hidden>
+    <div id="offline-note" style="margin-top:18px" hidden>
       <div class="banner warn">
-        Language understanding is unavailable, so VITA cannot ask follow-up
-        questions. Critical presentations are still recognised, and every case
-        is passed to a clinician for review.
+        Our assistant is offline at the moment. You can still register, and a
+        member of staff will speak to you directly.
       </div>
     </div>
   </div>
 
+  <!-- 2. the conversation, which never closes -->
   <div id="session" hidden>
+
+    <div id="status-host"></div>
+
     <div class="panel">
       <div class="panel-head">
-        <span>Intake conversation</span>
-        <div class="spacer" style="flex:1"></div>
+        <span id="who">Talking with VITA</span>
+        <div style="flex:1"></div>
         <span class="tiny muted" id="case-id"></span>
       </div>
       <div class="panel-body">
@@ -138,27 +162,23 @@
       </div>
     </div>
 
-    <div class="composer" style="margin-top:14px" id="composer">
-      <textarea id="input" rows="1" placeholder="Type your answer…"></textarea>
+    <div class="composer" style="margin-top:13px" id="composer">
+      <textarea id="input" rows="1" placeholder="Type here…"></textarea>
       <button id="photo-btn" title="Send a photo of your medicine">📷</button>
       <button class="primary" id="send">Send</button>
     </div>
-    <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
-    <div class="tiny muted" style="margin-top:6px">
-      Taking any medicine? Tap 📷 to send a photo of the packet — you do not need
-      to spell the name.
+    <div class="tiny muted" id="photo-hint" style="margin-top:6px">
+      Taking any medicine? Tap 📷 and photograph the packet — you do not need to
+      spell the name.
     </div>
 
-    <div class="outcome panel" id="outcome" hidden>
-      <div class="panel-head">Intake complete</div>
-      <div class="panel-body" id="outcome-body"></div>
-    </div>
+    <div id="extras" style="margin-top:16px"></div>
 
     <p class="disclaimer">
-      VITA is a triage assistant, not a doctor. It does not diagnose and does not
-      prescribe. Every recommendation is produced by a fixed set of triage rules,
-      and the rule behind it is shown. If you feel you are in danger, tell a
-      member of staff immediately.
+      VITA takes down your details and passes them to the hospital. It is not a
+      doctor, it does not diagnose you and it does not prescribe anything. A
+      clinician decides your care. If you feel worse while waiting, tell a member
+      of staff straight away.
     </p>
   </div>
 
@@ -166,150 +186,92 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-let caseId = null;
-let finished = false;
+let caseId = null, medsAnswer = "", lastNote = null, transportShown = false;
 
 async function api(path, options) {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
   return res.json();
 }
-
-/* ---------- mode ---------- */
+const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
 async function refreshMode() {
   try {
-    const health = await api("/api/health");
-    const el = $("mode");
-    el.textContent = health.mode;
-    el.className = `mode ${health.mode}`;
-    $("offline-note").hidden = health.mode === "FULL";
-  } catch {
-    $("mode").textContent = "unreachable";
-  }
+    const h = await api("/api/health");
+    $("mode").textContent = h.mode === "FULL" ? "online" : h.mode.toLowerCase();
+    $("mode").className = `mode ${h.mode}`;
+    $("offline-note").hidden = h.mode === "FULL";
+  } catch { $("mode").textContent = "unreachable"; }
 }
 
-/* ---------- chat ---------- */
+for (const b of document.querySelectorAll("#f-meds button")) {
+  b.onclick = () => {
+    document.querySelectorAll("#f-meds button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on");
+    medsAnswer = b.dataset.v;
+  };
+}
 
-function bubble(role, text, meta) {
-  const row = document.createElement("div");
-  row.className = `msg ${role}`;
-
-  const box = document.createElement("div");
-  box.className = "bubble";
+function bubble(role, text) {
+  const row = el("div", `msg ${role}`);
+  const box = el("div", "bubble");
   box.textContent = text;
-
-
   row.append(box);
   $("chat").append(row);
   row.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
-async function showRule(ruleId) {
-  try {
-    const rule = await api(`/api/rules/${ruleId}`);
-    const conditions = rule.conditions.map((c) => `  • ${c.fact} ${c.op} ${c.value}`).join("\n");
-    alert(
-      `${rule.rule_id} — ${rule.urgency}, ${rule.department}\n\n` +
-      `${rule.rationale}\n\nConditions:\n${conditions}\n\nSource: ${rule.source}`
-    );
-  } catch {
-    alert(`Rule ${ruleId} could not be loaded.`);
-  }
-}
+/* ---------- registration ---------- */
+async function beginIntake() {
+  const name = $("f-name").value.trim();
+  if (!name) { $("f-name").focus(); return false; }
 
-/* ---------- worked examples ----------
-   Not shortcuts through the system: each one fills the first message and the
-   intake then runs exactly as it would for anything typed by hand. They exist
-   so the hard cases can be reached without retyping them, and so a judge can
-   reproduce what the demonstration shows. */
-
-const EXAMPLES = [
-  {
-    label: "Routine",
-    text: "I've had a fever since yesterday and my whole body aches",
-    lang: "en",
-  },
-  {
-    label: "Time-critical",
-    text: "I have crushing chest pain going down my left arm and I'm sweating",
-    lang: "en",
-  },
-  {
-    label: "Cannot answer",
-    text: "my chest hurts",
-    lang: "en",
-  },
-  {
-    label: "Looks well, is not",
-    text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin for my heart.",
-    lang: "en",
-  },
-  {
-    label: "Outside our scope",
-    text: "my face has gone droopy on one side and my speech is slurred",
-    lang: "en",
-  },
-  {
-    label: "Malayalam",
-    text: "രാവിലെ മുതൽ നെഞ്ചുവേദനയും ശ്വാസംമുട്ടലും ഉണ്ട്",
-    lang: "ml",
-  },
-];
-
-function renderExamples() {
-  const grid = $("examples");
-  for (const example of EXAMPLES) {
-    const button = document.createElement("button");
-    button.className = "example";
-
-    const label = document.createElement("b");
-    label.textContent = example.label;
-    button.append(label, document.createTextNode(example.text));
-
-    button.onclick = async () => {
-      if (!$("pname").value.trim()) $("pname").value = "Demo Patient";
-      $("language").value = example.lang;
-      await $("begin").onclick();
-      $("input").value = example.text;
-      send();
-    };
-    grid.append(button);
-  }
-}
-
-renderExamples();
-
-/* ---------- session ---------- */
-
-$("begin").onclick = async () => {
   $("begin").disabled = true;
   try {
     const started = await api("/api/cases", {
       method: "POST",
-      body: JSON.stringify({ name: $("pname").value.trim(), language: $("language").value }),
+      body: JSON.stringify({
+        name,
+        language: $("f-lang").value,
+        age: $("f-age").value.trim(),
+        gender: $("f-gender").value,
+        past_history: $("f-history").value.trim(),
+        takes_medication: medsAnswer,
+      }),
     });
     caseId = started.case_id;
-    $("case-id").textContent = started.patient_name
-      ? `${started.patient_name} · ${caseId}`
-      : caseId;
-    $("start").hidden = true;
+    $("case-id").textContent = started.case_id;
+    $("who").textContent = started.patient_name || "Talking with VITA";
+    $("register").hidden = true;
     $("session").hidden = false;
-    bubble("vita", started.opening);
+
+    const first = (started.patient_name || "").split(" ")[0];
+    bubble("vita", `Thank you${first ? ", " + first : ""}. What brings you in today? Tell me in your own words.`);
+
+    $("photo-hint").hidden = medsAnswer !== "yes";
     $("input").focus();
+    return true;
   } catch (err) {
-    alert(`Could not start intake: ${err.message}`);
+    alert(`Could not start: ${err.message}`);
     $("begin").disabled = false;
+    return false;
   }
-};
+}
+$("begin").onclick = beginIntake;
+
+/* ---------- the conversation ----------
+   It never closes. Once triage has a result the patient still has somebody to
+   talk to, and anything they add afterwards goes to the hospital the same way
+   everything before it did. People remember things in the waiting room. */
 
 async function send() {
   const input = $("input");
   const text = input.value.trim();
-  if (!text || !caseId || finished) return;
+  if (!text || !caseId) return;
 
   bubble("patient", text);
   input.value = "";
@@ -322,69 +284,19 @@ async function send() {
       method: "POST",
       body: JSON.stringify({ text }),
     });
-
-    $("mode").textContent = turn.mode;
+    $("mode").textContent = turn.mode === "FULL" ? "online" : turn.mode.toLowerCase();
     $("mode").className = `mode ${turn.mode}`;
 
-    bubble("vita", turn.reply, { rule: turn.driven_by_rule });
-
-    if (turn.finished) {
-      finished = true;
-      $("composer").hidden = true;
-      renderOutcome(turn.note);
-    }
+    if (turn.reply) bubble("vita", turn.reply);
+    if (turn.note) { lastNote = turn.note; renderStatus(turn.note); }
   } catch (err) {
-    bubble("vita", `Something went wrong on our side (${err.message}). A member of staff has your details.`);
+    bubble("vita", "Something went wrong on our side. Please speak to a member of staff at the desk.");
   } finally {
     $("typing").hidden = true;
     $("send").disabled = false;
     input.focus();
   }
 }
-
-/* ---------- medication photo ----------
-   The patient photographs the packet instead of spelling a drug name they may
-   never have been able to pronounce. Gemini reads the printed text; a reference
-   table decides what the drug is. */
-
-$("photo-btn").onclick = () => $("photo-input").click();
-
-$("photo-input").onchange = async (event) => {
-  const file = event.target.files && event.target.files[0];
-  if (!file || !caseId) return;
-  event.target.value = "";
-
-  bubble("patient", `📷 ${file.name}`);
-  $("typing").hidden = false;
-  $("typing").textContent = "Reading the packet…";
-  $("photo-btn").disabled = $("send").disabled = true;
-
-  try {
-    const form = new FormData();
-    form.append("photo", file);
-    const res = await fetch(`/api/cases/${caseId}/medication-photo`, { method: "POST", body: form });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const data = await res.json();
-    const reading = data.reading || {};
-
-    if (!reading.readable || !(reading.medications || []).length) {
-      bubble("vita", "I could not read that clearly. You can try another photo, or just tell me the name if you know it.");
-    } else {
-      const names = reading.medications
-        .map((m) => [m.name_as_printed, m.strength].filter(Boolean).join(" "))
-        .filter(Boolean);
-      bubble("vita", `Thank you — I can see ${names.join(", ")}. I have added that to your record.`);
-    }
-  } catch (err) {
-    bubble("vita", `I could not read that photo (${err.message}). You can tell me the name instead if you know it.`);
-  } finally {
-    $("typing").hidden = true;
-    $("typing").textContent = "VITA is reading your message…";
-    $("photo-btn").disabled = $("send").disabled = false;
-    $("input").focus();
-  }
-};
-
 $("send").onclick = send;
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
@@ -394,131 +306,121 @@ $("input").addEventListener("input", (e) => {
   e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
 });
 
-/* ---------- outcome ---------- */
+/* ---------- medicine photo ---------- */
+$("photo-btn").onclick = () => $("photo-input") ? $("photo-input").click() : null;
+const fileInput = el("input");
+fileInput.type = "file";
+fileInput.accept = "image/*";
+fileInput.capture = "environment";
+fileInput.id = "photo-input";
+fileInput.hidden = true;
+document.body.append(fileInput);
 
-function list(items, className, emptyText) {
-  const ul = document.createElement("ul");
-  ul.className = `facts ${className || ""}`;
-  if (!items.length) {
-    const li = document.createElement("li");
-    li.className = "muted";
-    li.textContent = emptyText || "None.";
-    ul.append(li);
-    return ul;
+fileInput.onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file || !caseId) return;
+  event.target.value = "";
+
+  bubble("patient", "📷 photo of my medicine");
+  $("typing").hidden = false;
+  $("typing").textContent = "Reading the packet…";
+  $("photo-btn").disabled = $("send").disabled = true;
+
+  try {
+    const form = new FormData();
+    form.append("photo", file);
+    const res = await fetch(`/api/cases/${caseId}/medication-photo`, { method: "POST", body: form });
+    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+    const reading = (await res.json()).reading || {};
+
+    if (!reading.readable || !(reading.medications || []).length) {
+      bubble("vita", "I could not read that clearly. Try another photo, or just tell me the name if you know it.");
+    } else {
+      const names = reading.medications
+        .map((m) => [m.name_as_printed, m.strength].filter(Boolean).join(" "))
+        .filter(Boolean);
+      bubble("vita", `Thank you — I can see ${names.join(", ")}. I have noted that down and passed it on.`);
+    }
+  } catch (err) {
+    bubble("vita", "I could not read that photo. You can tell me the name instead if you know it.");
+  } finally {
+    $("typing").hidden = true;
+    $("typing").textContent = "VITA is reading your message…";
+    $("photo-btn").disabled = $("send").disabled = false;
+    $("input").focus();
   }
-  for (const item of items) {
-    const li = document.createElement("li");
-    li.textContent = item;
-    ul.append(li);
-  }
-  return ul;
-}
+};
 
-function section(title, node) {
-  const wrap = document.createElement("div");
-  wrap.className = "section";
-  const h = document.createElement("h4");
-  h.textContent = title;
-  wrap.append(h, node);
-  return wrap;
-}
+/* ---------- what the patient is told ----------
+   Where to go, who they will see, how soon. The rules, the facts and what could
+   not be established go to the hospital dashboard - showing a patient the
+   machinery of their own triage would worry them without helping them. */
 
-function renderOutcome(note) {
-  const body = $("outcome-body");
-  body.replaceChildren();
-  if (!note) return;
+const PRIORITY = {
+  CRITICAL: { word: "Seen immediately", blurb: "Please tell a member of staff now — do not wait in the queue." },
+  HIGH:     { word: "Seen urgently",    blurb: "You will be seen ahead of routine appointments." },
+  MODERATE: { word: "Standard",         blurb: "You will be seen in the normal queue for that department." },
+  LOW:      { word: "Routine",          blurb: "You will be seen in the normal queue for that department." },
+};
 
+function renderStatus(note) {
   const rec = note.recommendation;
+  if (!rec || !rec.urgency) return;
 
-  const headline = document.createElement("div");
-  headline.className = "headline";
-  const badge = document.createElement("span");
-  badge.className = `urgency ${rec.urgency}`;
-  badge.textContent = rec.urgency;
-  const dept = document.createElement("span");
-  dept.className = "dept";
-  dept.textContent = rec.department;
-  headline.append(badge, dept);
-  body.append(headline);
+  const p = PRIORITY[rec.urgency] || PRIORITY.MODERATE;
+  const host = $("status-host");
+  host.replaceChildren();
+
+  const bar = el("div", "status");
+  bar.append(el("span", "k", "Sent to the hospital"));
+  bar.append(el("span", `urgency ${rec.urgency}`, p.word));
+  bar.append(el("span", "dept", rec.department));
+  bar.append(el("span", "full", p.blurb));
+  host.append(bar);
+
+  const extras = $("extras");
+  extras.replaceChildren();
+
+  if (note.assigned_doctor) {
+    const c = el("div", "card");
+    c.append(el("div", "k", "You are assigned to"), el("div", "v", note.assigned_doctor.name));
+    c.append(el("div", "note",
+      `${note.assigned_doctor.specialty}. The hospital may assign a different clinician when you arrive.`));
+    extras.append(c);
+  }
 
   if (rec.requires_human_review) {
-    const banner = document.createElement("div");
-    banner.className = "banner info";
-    banner.textContent = "A clinician will review this case before you are seen.";
-    body.append(banner);
+    const b = el("div", "banner info");
+    b.style.marginBottom = "11px";
+    b.textContent = "A clinician will look over your details before you are seen.";
+    extras.append(b);
   }
 
-  if (note.reasoning.length) {
-    const box = document.createElement("div");
-    for (const r of note.reasoning) {
-      const row = document.createElement("div");
-      row.className = "reason";
+  const keep = el("div", "card");
+  keep.append(el("div", "k", "Anything else?"));
+  keep.append(el("div", "note",
+    "You can keep talking to me while you wait. If you remember something, or "
+    + "if you start feeling worse, tell me and the hospital will see it straight away."));
+  extras.append(keep);
 
-      const head = document.createElement("div");
-      const chip = document.createElement("span");
-      chip.className = "rule-chip";
-      chip.textContent = r.rule_id;
-      chip.onclick = () => showRule(r.rule_id);
-      head.append(chip, ` ${r.rationale}`);
-
-      const src = document.createElement("div");
-      src.className = "src";
-      src.textContent = r.source;
-
-      row.append(head, src);
-      box.append(row);
-    }
-    body.append(section("Why", box));
+  if (["HIGH", "CRITICAL"].includes(rec.urgency) && !transportShown) {
+    transportShown = true;
+    renderTransport(extras);
   }
-
-  body.append(section("You told us", list(note.patient_reported, null,
-    "Nothing was recorded from your description.")));
-  if (note.established_by_followup.length) {
-    body.append(section("Established by our questions", list(note.established_by_followup)));
-  }
-  if (note.recalled_from_records.length) {
-    body.append(section("From your previous visit", list(note.recalled_from_records)));
-  }
-  body.append(section("We could not check", list(note.unknown, "unknown-list",
-    "We were able to check everything the rules needed.")));
-
-  if (["HIGH", "CRITICAL"].includes(rec.urgency)) renderTransport(body, rec.urgency);
-
-  $("outcome").hidden = false;
-  $("outcome").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-/* ---------- emergency transport ---------- */
+function renderTransport(host) {
+  const box = el("div", "card transport");
+  box.append(el("div", "k", "Need transport?"));
+  box.append(el("div", "note",
+    "If you cannot get here safely on your own, we can ask for an ambulance. Nothing is requested until you confirm."));
 
-function renderTransport(body, urgency) {
-  const box = document.createElement("div");
-  box.className = "transport";
-
-  const h = document.createElement("h4");
-  h.textContent = "Emergency transport";
-  h.style.cssText = "margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650";
-
-  const explain = document.createElement("p");
-  explain.className = "small muted";
-  explain.style.margin = "0";
-  explain.textContent =
-    `Your case was graded ${urgency}, so an ambulance can be requested. ` +
-    "Nothing is requested until you confirm. Please give the address you " +
-    "want to be collected from.";
-
-  const row = document.createElement("div");
-  row.className = "row";
-
-  const where = document.createElement("input");
+  const row = el("div", "row");
+  const where = el("input");
   where.type = "text";
-  where.placeholder = "Pickup address";
-
-  const go = document.createElement("button");
-  go.className = "primary";
-  go.textContent = "Request ambulance";
-
-  const outcome = document.createElement("div");
-  outcome.className = "ticket";
+  where.placeholder = "Address to collect you from";
+  const go = el("button", "primary", "Request an ambulance");
+  const outcome = el("div", "ticket");
 
   go.onclick = async () => {
     const location = where.value.trim();
@@ -530,56 +432,64 @@ function renderTransport(body, urgency) {
         body: JSON.stringify({ pickup_location: location, confirmed_by: "patient" }),
       });
       row.hidden = true;
-      explain.textContent = "";
-      renderTicket(outcome, res.request);
+      const banner = el("div", "banner info");
+      banner.textContent = "Requested. The hospital's emergency team has been told.";
+      const dl = el("dl");
+      for (const [k, v] of [
+        ["Reference", res.request.request_id],
+        ["Collecting from", res.request.pickup_location],
+        ["Going to", res.request.destination],
+      ]) { dl.append(el("dt", null, k), el("dd", null, v)); }
+      outcome.replaceChildren(banner, dl);
     } catch (err) {
-      outcome.replaceChildren();
-      const fail = document.createElement("div");
-      fail.className = "banner stop";
-      fail.textContent = `Could not raise the request: ${err.message}. Please tell a member of staff.`;
-      outcome.append(fail);
+      outcome.replaceChildren(el("div", "banner stop",
+        `We could not raise that request. Please tell a member of staff. (${err.message})`));
       go.disabled = false;
     }
   };
 
   row.append(where, go);
-  box.append(h, explain, row, outcome);
-  body.append(box);
+  box.append(row, outcome);
+  host.append(box);
 }
 
-function renderTicket(target, request) {
-  target.replaceChildren();
+/* ---------- ready-made patients ---------- */
+const EXAMPLES = [
+  { label: "Routine", name: "Anil Joseph", age: "34", gender: "Male", meds: "no",
+    text: "I've had a fever since yesterday and my whole body aches", lang: "en" },
+  { label: "Time-critical", name: "Suresh Nair", age: "58", gender: "Male", meds: "no",
+    text: "I have crushing chest pain going down my left arm and I'm sweating", lang: "en" },
+  { label: "Looks well, is not", name: "Mary Thomas", age: "71", gender: "Female", meds: "yes",
+    history: "Atrial fibrillation", text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin.", lang: "en" },
+  { label: "Cannot answer", name: "John David", age: "45", gender: "Male", meds: "unsure",
+    text: "my chest hurts", lang: "en" },
+  { label: "Outside our scope", name: "Fatima Beevi", age: "63", gender: "Female", meds: "no",
+    text: "my face has gone droopy on one side and my speech is slurred", lang: "en" },
+  { label: "Malayalam", name: "Priya Menon", age: "40", gender: "Female", meds: "no",
+    text: "രാവിലെ മുതൽ നെഞ്ചുവേദനയും ശ്വാസംമുട്ടലും ഉണ്ട്", lang: "ml" },
+];
 
-  const banner = document.createElement("div");
-  banner.className = "banner info";
-  banner.textContent = "Transport requested. Emergency operations have been notified.";
-
-  const dl = document.createElement("dl");
-  for (const [label, value] of [
-    ["Request", request.request_id],
-    ["Case", request.case_id],
-    ["Priority", request.priority],
-    ["Pickup", request.pickup_location],
-    ["Destination", request.destination],
-    ["Status", request.status.replace(/_/g, " ")],
-  ]) {
-    const dt = document.createElement("dt");
-    dt.textContent = label;
-    const dd = document.createElement("dd");
-    dd.textContent = value;
-    dl.append(dt, dd);
+function renderExamples() {
+  const grid = $("examples");
+  for (const ex of EXAMPLES) {
+    const b = el("button", "example");
+    b.append(el("b", null, ex.label), document.createTextNode(ex.text));
+    b.onclick = async () => {
+      $("f-name").value = ex.name;
+      $("f-age").value = ex.age;
+      $("f-gender").value = ex.gender;
+      $("f-history").value = ex.history || "";
+      $("f-lang").value = ex.lang;
+      medsAnswer = ex.meds;
+      document.querySelectorAll("#f-meds button").forEach((x) =>
+        x.classList.toggle("on", x.dataset.v === ex.meds));
+      if (await beginIntake()) { $("input").value = ex.text; send(); }
+    };
+    grid.append(b);
   }
-
-  const caveat = document.createElement("p");
-  caveat.className = "tiny muted";
-  caveat.style.marginBottom = "0";
-  caveat.textContent =
-    "This is a request for dispatch, not a dispatch. A vehicle is allocated by " +
-    "emergency operations. In this demonstration build no real service is contacted.";
-
-  target.append(banner, dl, caveat);
 }
 
+renderExamples();
 refreshMode();
 </script>
 </body>

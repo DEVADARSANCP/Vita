@@ -40,6 +40,10 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 class StartCaseRequest(BaseModel):
     name: str = Field(default="", max_length=120)
     language: str = Field(default="en", max_length=16)
+    age: str = Field(default="", max_length=8)
+    gender: str = Field(default="", max_length=32)
+    past_history: str = Field(default="", max_length=600)
+    takes_medication: str = Field(default="", max_length=8)
 
 
 class MessageRequest(BaseModel):
@@ -129,7 +133,14 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
 
     @app.post("/api/cases")
     def start_case(body: StartCaseRequest) -> JSONResponse:
-        case = services.start_case(name=body.name, language=body.language)
+        case = services.start_case(
+            name=body.name,
+            language=body.language,
+            age=body.age,
+            gender=body.gender,
+            past_history=body.past_history,
+            takes_medication=body.takes_medication,
+        )
         return JSONResponse(
             {
                 "case_id": case.case_id,
@@ -137,6 +148,7 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
                 "patient_name": case.patient_name,
                 "language": case.language,
                 "mode": services.mode.value,
+                "takes_medication": case.takes_medication,
                 "opening": services.phraser.say("opening", case.language),
             }
         )
@@ -159,7 +171,10 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             "converged": result.converged,
             "notes": result.notes,
         }
-        if result.finished:
+        # The note goes back on every turn once a decision exists, not only on
+        # the turn that produced it - the conversation stays open and the
+        # patient's status can change while they are still talking.
+        if result.finished or (result.case.decision is not None):
             payload["note"] = services.note(case_id)
         return JSONResponse(payload)
 

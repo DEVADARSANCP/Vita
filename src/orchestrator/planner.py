@@ -116,6 +116,19 @@ THE CLINICAL IMPRESSION
 When you conclude, write what a clinician would want to know: what the presentation looks like to you, what you would want excluded, what worries you. This goes to the doctor and never to the patient. It is your reading, clearly labelled as such, and a clinician can disagree with it. Be direct and do not hedge into uselessness.
 """
 
+_CONTINUING = """The intake for this patient is already done. They have been graded, told where to go, and the hospital has their details. They are talking to you while they wait.
+
+You are still the same person who took their details. Keep talking to them.
+
+- Anything they add goes to the hospital immediately. Say so plainly when they tell you something new, so they know it was not wasted.
+- If they mention something that matters clinically, record it. The rules re-run on every message, and their grade can go up if what they say warrants it.
+- If they say they are getting worse, take it seriously, record it, and tell them to speak to a member of staff now as well as telling you.
+- If they are asking what happens next, where to go, or how long, answer plainly from what you know. You do not know queue times; say so rather than inventing one.
+- You still do not diagnose, reassure about a condition, or advise on medicine. That has not changed because the intake finished.
+- If they are just chatting or thanking you, be warm and brief. Not everything needs a question back.
+
+Do not set conclude. The conversation stays open for as long as they want it."""
+
 _RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -195,16 +208,26 @@ class PlannerTurn:
 
 
 def fingerprint(case: Case, decision: Any) -> str:
-    """A summary of the triage state, for detecting that it has stopped moving.
+    """A summary of the outcome, for detecting that it has stopped moving.
 
-    Urgency, which rules matched, and how much is established. If all three are
-    unchanged across turns, the questions being asked are not affecting the
-    outcome - which is the signal to stop, not a fixed question count.
+    Deliberately only the things that constitute the decision: the urgency, the
+    rules that matched, and the high-urgency rules still open. If those are
+    unchanged, the answers coming in are not affecting where this patient ends
+    up, however many of them there are.
+
+    An earlier version also counted established facts, which defeated the whole
+    mechanism - every answer recorded something, so the state never looked
+    stable and the conversation never ended. Learning that a limb is not
+    deformed is progress in the notes and no progress at all in the outcome.
     """
-    matched = ",".join(sorted(decision.cited_rules)) if decision else ""
-    known = sum(1 for f in case.facts.values() if f.is_known)
-    urgency = decision.urgency.value if decision else "?"
-    return f"{urgency}|{matched}|{known}"
+    if decision is None:
+        return "?"
+    matched = ",".join(sorted(decision.cited_rules))
+    open_high = ",".join(sorted(
+        e.rule.rule_id for e in decision.potential
+        if e.rule.urgency.rank >= Urgency.HIGH.rank
+    ))
+    return f"{decision.urgency.value}|{matched}|{open_high}"
 
 
 class TriagePlanner:
@@ -235,6 +258,7 @@ class TriagePlanner:
                 mode=self.llm.mode,
             )
 
+        already_decided = case.decision is not None
         case.add_patient_turn(message)
         turn = PlannerTurn(case=case, reply="", mode=self.llm.mode)
 
@@ -246,8 +270,18 @@ class TriagePlanner:
             return self._conclude(case, turn, impression="")
 
         if not self.llm.available:
+            if already_decided:
+                turn.reply = (
+                    "I have noted that and passed it to the hospital. If you feel "
+                    "worse, please tell a member of staff now."
+                )
+                case.add_vita_turn(turn.reply)
+                return turn
             turn.notes.append("planner unavailable; closing on deterministic findings only")
             return self._conclude(case, turn, impression="")
+
+        if already_decided:
+            return self._continue(case, message, turn)
 
         return self._plan(case, message, turn)
 
@@ -314,6 +348,93 @@ class TriagePlanner:
             return turn
 
         return self._conclude(case, turn, impression="")
+
+    def _continue(self, case: Case, message: str, turn: PlannerTurn) -> PlannerTurn:
+        """Talk to a patient whose triage is already done.
+
+        They are in a waiting room and they have remembered something, or they
+        are getting worse, or they want to know where to go. None of that is a
+        reason to stop listening - people volunteer the most useful thing they
+        will say ten minutes after they think they have finished.
+
+        Anything recorded here re-runs the rules, so a grade can still rise. It
+        is never lowered: a patient saying they feel a bit better is not
+        evidence that the reason they came in has gone away.
+        """
+        before = case.decision.urgency if case.decision else Urgency.LOW
+
+        context = self._gather_context(case, turn)
+        outcome = self.llm.generate_json(
+            self._prompt(case, message, context),
+            _RESPONSE_SCHEMA,
+            system_instruction=_CONTINUING,
+            temperature=0.3,
+        )
+        turn.mode = self.llm.mode
+
+        if not outcome.ok:
+            turn.reply = (
+                "I have noted that and passed it to the hospital. If you feel worse, "
+                "please tell a member of staff now."
+            )
+            case.add_vita_turn(turn.reply)
+            return turn
+
+        data = outcome.data if isinstance(outcome.data, dict) else {}
+        turn.thinking = str(data.get("thinking", "")).strip()
+        self._record(case, data.get("facts") or [], turn)
+
+        # Re-grade on what they just said. Upwards only.
+        self._regrade(case, before)
+        turn.finished = True  # a decision exists, so the caller refreshes the note
+
+        reply = str(data.get("reply", "")).strip() or (
+            "Thank you, I have added that and the hospital can see it."
+        )
+        if case.decision and case.decision.urgency.rank > before.rank:
+            reply += (
+                " That changes how urgent this is, so I have moved you up the "
+                "queue and told the staff."
+            )
+
+        case.add_vita_turn(reply)
+        turn.reply = reply
+        self._trace(case, patient_said=message, turn=turn, reply=reply, concluded=False)
+        return turn
+
+    def _regrade(self, case: Case, before: Urgency) -> None:
+        """Re-run the rules after new information, and never grade down.
+
+        A patient who says they feel a little better has not undone the reason
+        they came in, and a system that walks an urgency backwards on a hopeful
+        sentence is one nobody should trust.
+        """
+        flags = [f for f in self.kb.red_flags if f.id in case.red_flags]
+        strongest = max(flags, key=lambda f: f.urgency.rank, default=None)
+
+        fresh = decide(
+            self.kb.rules_for(case.complaint),
+            case.facts,
+            complaint=Complaint.OUT_OF_SCOPE if case.out_of_scope else case.complaint,
+            contradictions=case.contradictions,
+            degraded=self.llm.mode is not SystemMode.FULL,
+            scope_uncertain=case.scope_uncertain,
+            final=True,
+            floor=strongest.urgency if strongest else None,
+            floor_department=strongest.department if strongest else "",
+            floor_reason=EscalationReason.RED_FLAG if strongest else None,
+        )
+        if fresh.urgency.rank >= before.rank:
+            case.decision = fresh
+        else:
+            logger.info(
+                "case %s: re-grade would have lowered %s to %s; keeping the higher grade",
+                case.case_id, before.value, fresh.urgency.value,
+            )
+            case.decision.unknowns = fresh.unknowns
+
+        if case.decision.requires_human_review:
+            case.status = CaseStatus.AWAITING_REVIEW
 
     # -- context ---------------------------------------------------------
 

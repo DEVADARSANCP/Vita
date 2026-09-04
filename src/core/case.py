@@ -107,6 +107,14 @@ class Case:
     patient_id: str = ""
     patient_name: str = ""
 
+    #: Collected at the desk before the conversation starts, the way a real
+    #: intake form works. Age becomes a triage fact directly; the rest is
+    #: context a clinician wants and the rules do not use.
+    patient_age: str = ""
+    patient_gender: str = ""
+    past_history: str = ""
+    takes_medication: str = ""
+
     language: str = "en"
     complaint: Complaint = Complaint.UNDETERMINED
     status: CaseStatus = CaseStatus.INTAKE
@@ -292,6 +300,10 @@ class Case:
             "case_id": self.case_id,
             "patient_id": self.patient_id,
             "patient_name": self.patient_name,
+            "patient_age": self.patient_age,
+            "patient_gender": self.patient_gender,
+            "past_history": self.past_history,
+            "takes_medication": self.takes_medication,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "language": self.language,

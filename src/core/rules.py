@@ -199,6 +199,43 @@ def evaluate_all(rules: Iterable[Rule], facts: dict[str, Fact]) -> list[RuleEval
 
 
 # ---------------------------------------------------------------------------
+# Complaint inference
+# ---------------------------------------------------------------------------
+
+#: The fact that anchors each complaint's rule set, in priority order. Where
+#: several are established, the earlier one wins: a patient with chest pain and
+#: breathing difficulty is triaged against the chest pain rules, because that is
+#: where the rule covering both of them lives.
+_ANCHORS: list[tuple[str, Complaint]] = [
+    ("chest_pain", Complaint.CHEST_PAIN),
+    ("breathing_difficulty", Complaint.BREATHING_DIFFICULTY),
+    ("abdominal_pain", Complaint.ABDOMINAL_PAIN),
+    ("injury", Complaint.INJURY),
+    ("fever", Complaint.FEVER),
+]
+
+
+def infer_complaint(facts: dict[str, Fact]) -> Complaint:
+    """Work out the complaint from established facts alone, with no model.
+
+    The classifier agent normally does this, and does it better - it reads
+    intent, not just symptoms. But it needs Gemini, and a case that reaches the
+    rule engine with no complaint gets evaluated against the general modifiers
+    only, which is how a patient reporting chest pain ends up with no chest pain
+    rule ever considered.
+
+    So this is the floor: if a red flag or a keyword has already established
+    that chest pain is present, the chest pain rules apply, key unavailable or
+    not.
+    """
+    for key, complaint in _ANCHORS:
+        fact = facts.get(key)
+        if fact is not None and fact.is_known and fact.tri is Tri.TRUE:
+            return complaint
+    return Complaint.UNDETERMINED
+
+
+# ---------------------------------------------------------------------------
 # Question selection
 # ---------------------------------------------------------------------------
 
@@ -248,6 +285,9 @@ def decide(
     contradictions: Iterable[Contradiction] = (),
     degraded: bool = False,
     final: bool = False,
+    floor: Urgency | None = None,
+    floor_department: str = "",
+    floor_reason: EscalationReason | None = None,
 ) -> TriageDecision:
     """Produce the triage decision for the facts established so far.
 
@@ -295,6 +335,16 @@ def decide(
             + ", ".join(c.describe() for c in strongest_open.blocking)
             + " remains unknown."
         )
+
+    # A caller-supplied floor - in practice a matched red flag. The phrase the
+    # patient used was recognised directly, so the urgency it carries applies
+    # whether or not the rules have enough facts to reach the same conclusion.
+    # Like every other adjustment here it can only raise.
+    if floor is not None and floor.rank > urgency.rank:
+        urgency = floor
+        department = floor_department or department
+        if floor_reason is not None:
+            reasons.append(floor_reason)
 
     if not matched and final and not unresolved:
         # Nothing fired and nothing is outstanding. That is not a well patient,

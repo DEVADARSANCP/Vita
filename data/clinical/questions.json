@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "note": "One entry per fact a rule can require. VITA never invents a follow-up question: it asks the question attached to the fact that is currently blocking the most urgent unresolved rule, which is why every question can be traced back to a rule id. `askable: false` marks facts that are established from records rather than from the patient.",
+  "note": "One entry per fact a rule can require. VITA never invents a follow-up question: it asks about the fact blocking the most urgent unresolved rule, which is why every question can be traced back to a rule id. The planner rephrases these in the patient's own language, but the wording here sets the standard: everyday words a patient would use themselves. No clinical terms, no formal register, nothing anyone would have to look up. `askable: false` marks facts established from records rather than from the patient.",
   "questions": {
     "chest_pain": {
       "text": "Are you having any pain or discomfort in your chest?",
@@ -11,7 +11,7 @@
       "type": "boolean"
     },
     "pain_radiating": {
-      "text": "Does the pain spread anywhere else, such as into your arm, jaw, neck or back?",
+      "text": "Does the pain move anywhere else, like your arm, jaw, neck or back?",
       "type": "boolean"
     },
     "sweating": {
@@ -27,11 +27,11 @@
       "type": "boolean"
     },
     "severity": {
-      "text": "On a scale of nought to ten, where ten is the worst pain you can imagine, how bad is it right now?",
+      "text": "How bad is the pain right now, from 0 to 10? 10 is the worst pain you can think of.",
       "type": "scale_0_10"
     },
     "known_cardiac_history": {
-      "text": "Have you ever been told you have a heart condition, or had a heart attack before?",
+      "text": "Has a doctor ever told you that you have a heart problem, or have you had a heart attack before?",
       "type": "boolean"
     },
     "age_years": {
@@ -39,15 +39,15 @@
       "type": "number"
     },
     "onset_hours": {
-      "text": "When did this start? You can answer in hours or days.",
+      "text": "When did this start? You can say it in hours or days.",
       "type": "duration_hours"
     },
     "pain_on_breathing": {
-      "text": "Does the pain get worse when you breathe in deeply or cough?",
+      "text": "Does it hurt more when you breathe in deeply or cough?",
       "type": "boolean"
     },
     "pain_reproducible_on_pressure": {
-      "text": "If you press on the painful spot with your fingers, does that reproduce the same pain?",
+      "text": "If you press on the sore spot with your fingers, does it hurt the same way?",
       "type": "boolean"
     },
     "fever": {
@@ -55,7 +55,7 @@
       "type": "boolean"
     },
     "temperature_c": {
-      "text": "Have you measured your temperature? If so, what was the reading?",
+      "text": "Have you checked your temperature? If yes, what did it say?",
       "type": "temperature_c"
     },
     "duration_days": {
@@ -63,31 +63,31 @@
       "type": "number"
     },
     "neck_stiffness": {
-      "text": "Is your neck stiff or painful when you try to bend your chin to your chest?",
+      "text": "Is your neck stiff or sore when you try to touch your chin to your chest?",
       "type": "boolean"
     },
     "rash_non_blanching": {
-      "text": "Do you have a rash? If you press a glass against it, does the rash stay visible?",
+      "text": "Do you have a rash? If you press a glass on it, does the rash still show through?",
       "type": "boolean"
     },
     "confusion": {
-      "text": "Have you felt confused or unusually drowsy, or has anyone said you seem confused?",
+      "text": "Have you felt confused or very sleepy? Has anyone said you seem confused?",
       "type": "boolean"
     },
     "immunocompromised": {
-      "text": "Are you receiving chemotherapy, taking steroids or immune-suppressing medication, or have you been told your immune system is weakened?",
+      "text": "Are you on chemotherapy, steroids, or any medicine that weakens your immune system? Or has a doctor told you your immunity is low?",
       "type": "boolean"
     },
     "speaking_full_sentences": {
-      "text": "Can you say a full sentence out loud without stopping to catch your breath?",
+      "text": "Can you say a whole sentence out loud without stopping for breath?",
       "type": "boolean"
     },
     "lips_blue": {
-      "text": "Have your lips or fingertips turned blue or grey?",
+      "text": "Have your lips or fingertips gone blue or grey?",
       "type": "boolean"
     },
     "sudden_onset": {
-      "text": "Did this come on suddenly, over seconds or minutes, rather than gradually?",
+      "text": "Did it start suddenly, in seconds or minutes, rather than slowly?",
       "type": "boolean"
     },
     "known_asthma": {
@@ -103,7 +103,7 @@
       "type": "boolean"
     },
     "bleeding_uncontrolled": {
-      "text": "Are you bleeding, and does it keep bleeding even when you press firmly on it?",
+      "text": "Are you bleeding? Does it keep bleeding even when you press hard on it?",
       "type": "boolean"
     },
     "head_injury": {
@@ -111,23 +111,23 @@
       "type": "boolean"
     },
     "loss_of_consciousness": {
-      "text": "Did you lose consciousness at any point, even briefly?",
+      "text": "Did you black out at any point, even for a moment?",
       "type": "boolean"
     },
     "on_anticoagulants": {
-      "text": "Do you take any blood-thinning medication, such as warfarin, aspirin, apixaban or clopidogrel?",
+      "text": "Do you take any blood-thinning medicine, like warfarin, aspirin, apixaban or clopidogrel?",
       "type": "boolean"
     },
     "mechanism_high_energy": {
-      "text": "Was this a road accident, a fall from a height, or something of similar force?",
+      "text": "Was it something big, like a road accident or a fall from a height?",
       "type": "boolean"
     },
     "deformity_visible": {
-      "text": "Does the injured part look bent, out of shape, or obviously wrong?",
+      "text": "Does the hurt part look bent, crooked, or clearly out of shape?",
       "type": "boolean"
     },
     "can_bear_weight": {
-      "text": "Can you stand and put weight on it, or use it normally?",
+      "text": "Can you stand on it and use it as normal?",
       "type": "boolean"
     },
     "abdominal_pain": {
@@ -135,15 +135,15 @@
       "type": "boolean"
     },
     "rigid_abdomen": {
-      "text": "Is your stomach hard and tense, and does gentle pressure make the pain much worse?",
+      "text": "Is your stomach hard and tight? Does even gentle pressure hurt a lot?",
       "type": "boolean"
     },
     "vomiting_blood": {
-      "text": "Have you vomited blood, or something that looked like coffee grounds?",
+      "text": "Have you thrown up blood, or something that looked like coffee grounds?",
       "type": "boolean"
     },
     "black_stool": {
-      "text": "Have your stools been black and tarry, or contained blood?",
+      "text": "Has your poo been black and sticky, or had blood in it?",
       "type": "boolean"
     },
     "pregnancy": {
@@ -151,7 +151,7 @@
       "type": "boolean"
     },
     "sudden_severe_onset": {
-      "text": "Did the pain start suddenly and severely, rather than building up gradually?",
+      "text": "Did the pain start all at once and very badly, instead of slowly building up?",
       "type": "boolean"
     },
     "testicular_pain": {
@@ -159,7 +159,7 @@
       "type": "boolean"
     },
     "prior_visit_72h_same_complaint": {
-      "text": "Have you been seen here in the last three days for this same problem?",
+      "text": "Have you been here in the last three days for this same problem?",
       "type": "boolean",
       "askable": true,
       "note": "Normally established from the patient's prior visits rather than asked, but askable as a fallback when no record is found."

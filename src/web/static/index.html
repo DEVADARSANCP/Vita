@@ -94,9 +94,14 @@
   <div id="start">
     <div class="intro">
       <h1>How can we help you today?</h1>
-      <p>Describe what is troubling you in your own words. Any language.</p>
+      <p>
+        Tell us your name so we can find your earlier visits, then describe what
+        is troubling you in your own words. Any language.
+      </p>
     </div>
     <div class="setup">
+      <input type="text" id="pname" placeholder="Your name" autocomplete="name"
+             style="min-width:190px" aria-label="Your name">
       <select id="language">
         <option value="en">English</option>
         <option value="ml">മലയാളം — Malayalam</option>
@@ -191,20 +196,6 @@ function bubble(role, text, meta) {
   box.className = "bubble";
   box.textContent = text;
 
-  if (meta && meta.rule) {
-    const why = document.createElement("div");
-    why.className = "why";
-    why.append("Asked because rule ");
-
-    const chip = document.createElement("span");
-    chip.className = "rule-chip";
-    chip.textContent = meta.rule;
-    chip.title = "Show this rule";
-    chip.onclick = () => showRule(meta.rule);
-    why.append(chip);
-    why.append(" could not yet be ruled out.");
-    box.append(why);
-  }
 
   row.append(box);
   $("chat").append(row);
@@ -274,6 +265,7 @@ function renderExamples() {
     button.append(label, document.createTextNode(example.text));
 
     button.onclick = async () => {
+      if (!$("pname").value.trim()) $("pname").value = "Demo Patient";
       $("language").value = example.lang;
       await $("begin").onclick();
       $("input").value = example.text;
@@ -292,10 +284,12 @@ $("begin").onclick = async () => {
   try {
     const started = await api("/api/cases", {
       method: "POST",
-      body: JSON.stringify({ language: $("language").value }),
+      body: JSON.stringify({ name: $("pname").value.trim(), language: $("language").value }),
     });
     caseId = started.case_id;
-    $("case-id").textContent = caseId;
+    $("case-id").textContent = started.patient_name
+      ? `${started.patient_name} · ${caseId}`
+      : caseId;
     $("start").hidden = true;
     $("session").hidden = false;
     bubble("vita", started.opening);

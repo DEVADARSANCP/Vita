@@ -7,72 +7,94 @@
 <link rel="stylesheet" href="/static/vita.css">
 <style>
   .layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: 16px;
-    padding: 16px 20px 40px;
-    align-items: start;
-    max-width: 1500px;
-    margin: 0 auto;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 14px; padding: 14px 18px 40px; align-items: start;
+    max-width: 1640px; margin: 0 auto;
   }
-  @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 1120px) { .layout { grid-template-columns: 1fr; } }
 
-  .counts { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .counts { display: flex; gap: 7px; flex-wrap: wrap; padding: 11px 14px; border-bottom: 1px solid var(--line); }
   .count {
-    display: flex; flex-direction: column; gap: 2px;
-    padding: 7px 12px; border-radius: 8px; background: var(--panel-2);
-    border: 1px solid var(--line); min-width: 82px;
+    display: flex; flex-direction: column; gap: 2px; padding: 6px 11px;
+    border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); min-width: 76px;
   }
-  .count .n { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .count .k { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .count .n { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .count .k { font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
   .count.CRITICAL .n { color: var(--critical); }
-  .count.HIGH .n     { color: var(--high); }
+  .count.HIGH .n { color: var(--high); }
   .count.MODERATE .n { color: var(--moderate); }
-  .count.LOW .n      { color: var(--low); }
+  .count.LOW .n { color: var(--low); }
 
-  .filters { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .filters button { padding: 5px 11px; font-size: 13px; }
+  .tabs { display: flex; gap: 3px; flex-wrap: wrap; }
+  .tabs button { padding: 5px 10px; font-size: 12.5px; }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tabs button .pill {
+    display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 8px;
+    background: var(--critical); color: #fff; font-size: 10px; font-weight: 700;
+  }
+
+  .filters { display: flex; gap: 5px; padding: 9px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .filters button { padding: 4px 10px; font-size: 12.5px; }
   .filters button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  .section { margin-top: 18px; }
+  .section { margin-top: 16px; }
   .section h4 {
-    margin: 0 0 8px; font-size: 11px; letter-spacing: 0.06em;
+    margin: 0 0 7px; font-size: 10.5px; letter-spacing: .06em;
     text-transform: uppercase; color: var(--muted); font-weight: 650;
   }
 
-  .verbatim {
-    background: var(--panel-2); border-left: 3px solid var(--accent);
-    padding: 10px 13px; border-radius: 0 7px 7px 0; margin: 0;
-    font-style: italic; color: var(--ink-2); line-height: 1.55;
+  .convo { display: flex; flex-direction: column; gap: 9px; }
+  .turn { display: flex; }
+  .turn.patient { justify-content: flex-end; }
+  .turn .bub { max-width: 84%; padding: 8px 11px; border-radius: 11px; font-size: 13.5px; line-height: 1.5; }
+  .turn.vita .bub { background: var(--panel-2); border: 1px solid var(--line); border-bottom-left-radius: 3px; }
+  .turn.patient .bub { background: var(--accent-soft); border: 1px solid var(--accent); border-bottom-right-radius: 3px; }
+  .turn .who { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; font-weight: 650; }
+
+  .impression {
+    background: var(--moderate-bg); border: 1px solid var(--moderate);
+    border-radius: 8px; padding: 11px 13px; font-size: 13.5px; line-height: 1.55; color: var(--ink);
+  }
+  .impression .tag {
+    display: block; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--moderate); font-weight: 700; margin-bottom: 5px;
   }
 
-  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 14px; font-size: 14px; }
-  .kv dt { color: var(--muted); font-size: 13px; }
-  .kv dd { margin: 0; }
+  .req { border: 1px solid var(--line); border-radius: 9px; margin-bottom: 9px; overflow: hidden; }
+  .req.pending { border-color: var(--accent); }
+  .req-head { padding: 9px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+  .req-body { padding: 11px 12px; font-size: 13.5px; line-height: 1.55; }
+  .req-why { color: var(--ink-2); }
+  .req-consq { font-size: 12px; color: var(--muted); margin-top: 7px; }
+  .req-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .req-act input, .req-act select { font-size: 13px; padding: 6px 9px; }
+  .req-act input.note { flex: 1; min-width: 130px; }
+  .badge { font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; }
+  .badge.pending { background: var(--accent-soft); color: var(--accent); }
+  .badge.approved { background: var(--low-bg); color: var(--low); }
+  .badge.rejected { background: var(--critical-bg); color: var(--critical); }
 
-  .reason { padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
+  .room { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; background: var(--panel-2); }
+  .room.busy { opacity: .55; }
+  .room b { display: block; font-size: 13.5px; }
+  .room .who { color: var(--accent); font-size: 11.5px; margin-top: 3px; }
+
+  .verbatim { background: var(--panel-2); border-left: 3px solid var(--accent); padding: 9px 12px; border-radius: 0 7px 7px 0; margin: 0 0 7px; font-style: italic; color: var(--ink-2); }
+  .reason { padding: 9px 0; border-bottom: 1px solid var(--line-2); }
   .reason:last-child { border-bottom: none; }
-  .reason .src { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .reason .cond { font-size: 12.5px; color: var(--ink-2); margin-top: 5px; }
-
-  .trail { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-  .trail li { padding: 6px 0; border-bottom: 1px solid var(--line-2); display: flex; gap: 10px; }
+  .reason .src { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .reason .cond { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+  .trail { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+  .trail li { padding: 5px 0; border-bottom: 1px solid var(--line-2); display: flex; gap: 9px; }
   .trail li:last-child { border-bottom: none; }
-  .trail .at { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+  .trail .at { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 11.5px; }
   .trail .act { font-weight: 560; white-space: nowrap; }
-  .trail .dt { color: var(--ink-2); }
-
-  .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
-
-  .empty { padding: 40px 20px; text-align: center; color: var(--muted); }
-
-  .tabs { display: flex; gap: 4px; }
-  .tabs button { padding: 5px 11px; font-size: 13px; }
-  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  .mail { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
-  .mail-head { padding: 9px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: 13px; }
-  .mail-body { padding: 12px; }
+  .actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .empty { padding: 34px 18px; text-align: center; color: var(--muted); }
+  .mail { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 9px; overflow: hidden; }
+  .mail-head { padding: 8px 11px; background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .mail-body { padding: 11px; }
 </style>
 </head>
 <body>
@@ -88,284 +110,360 @@
 
 <div class="layout">
 
-  <!-- queue -->
-  <div class="panel">
-    <div class="counts" id="counts"></div>
-    <div class="filters">
-      <button data-status="" class="on">All</button>
-      <button data-status="awaiting_review">Awaiting review</button>
-      <button data-status="reviewed">Reviewed</button>
-      <button data-status="intake">In progress</button>
-      <div style="flex:1"></div>
-      <button id="refresh">Refresh</button>
+  <div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="counts" id="counts"></div>
+      <div class="filters">
+        <button data-status="" class="on">All</button>
+        <button data-status="awaiting_review">Awaiting review</button>
+        <button data-status="reviewed">Reviewed</button>
+        <button data-status="intake">In progress</button>
+        <div style="flex:1"></div>
+        <button id="refresh">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Case</th><th>Patient</th><th>Urgency</th>
+            <th>Complaint</th><th>Department</th><th>Status</th>
+          </tr></thead>
+          <tbody id="queue"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="queue-empty" hidden>No cases yet.</div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Case</th><th>Urgency</th><th>Complaint</th>
-            <th>Department</th><th>Status</th><th>Lang</th>
-          </tr>
-        </thead>
-        <tbody id="queue"></tbody>
-      </table>
-    </div>
-    <div class="empty" id="queue-empty" hidden>
-      No cases yet. Start one from the patient view.
+
+    <div class="panel">
+      <div class="panel-head">
+        <span>Hospital</span>
+        <div style="flex:1"></div>
+        <div class="tabs" id="hosp-tabs">
+          <button data-h="requests" class="on">Requests<span class="pill" id="req-pill" hidden></span></button>
+          <button data-h="doctors">Doctors</button>
+          <button data-h="rooms">Rooms</button>
+        </div>
+      </div>
+      <div class="panel-body" id="hospital"></div>
     </div>
   </div>
 
-  <!-- detail -->
   <div class="panel">
     <div class="panel-head">
       <span id="detail-title">Case detail</span>
       <div style="flex:1"></div>
-      <div class="tabs">
+      <div class="tabs" id="case-tabs">
         <button data-tab="case" class="on">Case</button>
+        <button data-tab="convo">Conversation</button>
         <button data-tab="note">Note</button>
-        <button data-tab="mail">Notifications</button>
-        <button data-tab="transport">Transport</button>
+        <button data-tab="mail">Email</button>
       </div>
     </div>
-    <div class="panel-body" id="detail">
-      <div class="empty">Select a case from the queue.</div>
-    </div>
+    <div class="panel-body" id="detail"><div class="empty">Select a case from the queue.</div></div>
   </div>
 
 </div>
 
 <script>
 const $ = (id) => document.getElementById(id);
-let selected = null;
-let filter = "";
-let tab = "case";
-let cachedNote = null;
+let selected = null, filter = "", tab = "case", hospTab = "requests", cachedNote = null;
 
 async function api(path, options) {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
   return res.json();
 }
-
-const el = (tag, cls, text) => {
-  const node = document.createElement(tag);
-  if (cls) node.className = cls;
-  if (text !== undefined) node.textContent = text;
-  return node;
-};
-
-function section(title, node) {
-  const wrap = el("div", "section");
-  wrap.append(el("h4", null, title), node);
-  return wrap;
-}
-
+const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
+const section = (title, node) => { const w = el("div", "section"); w.append(el("h4", null, title), node); return w; };
 function list(items, cls) {
   const ul = el("ul", `facts ${cls || ""}`);
-  if (!items || !items.length) {
-    ul.append(el("li", "muted", "Nothing recorded."));
-    return ul;
-  }
-  for (const item of items) ul.append(el("li", null, item));
+  if (!items || !items.length) { ul.append(el("li", "muted", "Nothing recorded.")); return ul; }
+  for (const i of items) ul.append(el("li", null, i));
   return ul;
 }
 
-/* ---------- header ---------- */
-
 async function refreshStatus() {
   try {
-    const health = await api("/api/health");
-    $("mode").textContent = health.mode;
-    $("mode").className = `mode ${health.mode}`;
-    $("notify-state").textContent = health.notify_enabled
-      ? "notifications: live"
-      : "notifications: dry run";
-  } catch {
-    $("mode").textContent = "unreachable";
-  }
+    const h = await api("/api/health");
+    $("mode").textContent = h.mode;
+    $("mode").className = `mode ${h.mode}`;
+    $("notify-state").textContent = h.notify_enabled ? "email: live" : "email: dry run";
+  } catch { $("mode").textContent = "unreachable"; }
 }
-
-/* ---------- queue ---------- */
 
 async function refreshQueue() {
   const data = await api(`/api/queue${filter ? `?status=${filter}` : ""}`);
-
   const counts = $("counts");
   counts.replaceChildren();
-  for (const key of ["CRITICAL", "HIGH", "MODERATE", "LOW"]) {
-    const box = el("div", `count ${key}`);
-    box.append(el("div", "n", String(data.counts[key] || 0)), el("div", "k", key));
-    counts.append(box);
+  for (const k of ["CRITICAL", "HIGH", "MODERATE", "LOW"]) {
+    const b = el("div", `count ${k}`);
+    b.append(el("div", "n", String(data.counts[k] || 0)), el("div", "k", k));
+    counts.append(b);
   }
-  const awaiting = el("div", "count");
-  awaiting.append(
-    el("div", "n", String(data.counts.awaiting_review || 0)),
-    el("div", "k", "Awaiting review")
-  );
-  counts.append(awaiting);
+  const aw = el("div", "count");
+  aw.append(el("div", "n", String(data.counts.awaiting_review || 0)), el("div", "k", "Awaiting review"));
+  counts.append(aw);
 
   const body = $("queue");
   body.replaceChildren();
   $("queue-empty").hidden = data.cases.length > 0;
-
   for (const row of data.cases) {
     const tr = el("tr");
     if (row.case_id === selected) tr.classList.add("selected");
     tr.onclick = () => selectCase(row.case_id);
-
-    const idCell = el("td");
-    idCell.append(el("code", "tiny", row.case_id));
-
-    const urgencyCell = el("td");
-    if (row.urgency) urgencyCell.append(el("span", `urgency ${row.urgency}`, row.urgency));
-    else urgencyCell.append(el("span", "tiny muted", "in progress"));
-
+    const idc = el("td"); idc.append(el("code", "tiny", row.case_id));
+    const uc = el("td");
+    if (row.urgency) uc.append(el("span", `urgency ${row.urgency}`, row.urgency));
+    else uc.append(el("span", "tiny muted", "in progress"));
     tr.append(
-      idCell,
-      urgencyCell,
+      idc,
+      el("td", null, row.patient_name || "—"),
+      uc,
       el("td", null, (row.complaint || "").replace(/_/g, " ")),
       el("td", null, row.department || "—"),
-      el("td", "tiny muted", (row.status || "").replace(/_/g, " ")),
-      el("td", "tiny muted", row.language || "en")
+      el("td", "tiny muted", (row.status || "").replace(/_/g, " "))
     );
     body.append(tr);
   }
 }
 
-/* ---------- detail ---------- */
+async function renderHospital() {
+  const host = $("hospital");
+  host.replaceChildren(el("div", "empty", "Loading…"));
+  try {
+    if (hospTab === "requests") await renderRequests(host);
+    else if (hospTab === "doctors") await renderDoctors(host);
+    else await renderRooms(host);
+  } catch (err) { host.replaceChildren(el("div", "empty", `Could not load: ${err.message}`)); }
+}
+
+async function renderRequests(host) {
+  const data = await api("/api/requests");
+  const pending = data.counts.pending || 0;
+  const pill = $("req-pill");
+  pill.hidden = pending === 0;
+  pill.textContent = String(pending);
+
+  host.replaceChildren();
+  const intro = el("p", "small muted");
+  intro.style.margin = "0 0 12px";
+  intro.textContent = "What the assistant has asked for. Nothing here has happened — approving is what makes it happen.";
+  host.append(intro);
+
+  if (!data.requests.length) { host.append(el("div", "empty", "No requests.")); return; }
+
+  for (const r of data.requests) {
+    const box = el("div", `req ${r.status === "pending" ? "pending" : ""}`);
+    const head = el("div", "req-head");
+    head.append(el("span", `badge ${r.status}`, r.status), el("strong", null, r.label), el("code", "tiny muted", r.case_id));
+
+    const body = el("div", "req-body");
+    body.append(el("div", null, r.summary));
+    body.append(el("div", "req-why", r.reasoning));
+    if (r.evidence && r.evidence.length) body.append(el("div", "req-consq", `Based on: ${r.evidence.join(", ")}`));
+    body.append(el("div", "req-consq", `If approved: ${r.consequence}`));
+
+    if (r.status === "pending") {
+      const act = el("div", "req-act");
+      let roomPicker = null;
+      if (r.kind === "admit_patient") {
+        roomPicker = el("select");
+        roomPicker.append(el("option", null, "Choose a room…"));
+        try {
+          const q = r.payload.department ? `?department=${encodeURIComponent(r.payload.department)}` : "";
+          const rooms = await api(`/api/rooms${q}`);
+          for (const room of rooms.rooms.filter((x) => !x.occupied)) {
+            const o = el("option", null, `${room.room_id} · ${room.department} · ${room.type}`);
+            o.value = room.room_id;
+            roomPicker.append(o);
+          }
+        } catch {}
+        act.append(roomPicker);
+      }
+      const note = el("input", "note"); note.type = "text"; note.placeholder = "Note (optional)";
+      const yes = el("button", "primary", "Approve");
+      const no = el("button", null, "Reject");
+      const decide = async (approved) => {
+        yes.disabled = no.disabled = true;
+        try {
+          await api(`/api/requests/${r.request_id}/decide`, {
+            method: "POST",
+            body: JSON.stringify({
+              approved, by: "Dr. on duty", note: note.value.trim(),
+              room_id: roomPicker ? roomPicker.value : "",
+            }),
+          });
+          cachedNote = null;
+          await renderHospital(); await refreshQueue();
+          if (selected) await renderDetail();
+        } catch (err) { alert(err.message); yes.disabled = no.disabled = false; }
+      };
+      yes.onclick = () => decide(true);
+      no.onclick = () => decide(false);
+      act.append(note, yes, no);
+      body.append(act);
+    } else {
+      body.append(el("div", "req-consq",
+        `${r.status} by ${r.decided_by}${r.decision_note ? ` — ${r.decision_note}` : ""}`));
+    }
+    box.append(head, body);
+    host.append(box);
+  }
+}
+
+async function renderDoctors(host) {
+  const data = await api("/api/doctors");
+  host.replaceChildren();
+  const wrap = el("div", "table-wrap");
+  const table = el("table");
+  const thead = el("thead");
+  const hr = el("tr");
+  for (const h of ["Name", "Department", "Contact", "On call"]) hr.append(el("th", null, h));
+  thead.append(hr);
+  const body = el("tbody");
+  for (const d of data.doctors) {
+    const tr = el("tr");
+    tr.style.cursor = "default";
+    const contact = el("td");
+    contact.append(el("div", "tiny", d.email || "—"));
+    if (d.phone) contact.append(el("div", "tiny muted", d.phone));
+    tr.append(el("td", null, d.name), el("td", null, d.department), contact,
+              el("td", "tiny", d.on_call ? "on call" : "—"));
+    body.append(tr);
+  }
+  table.append(thead, body);
+  wrap.append(table);
+  host.append(wrap);
+}
+
+async function renderRooms(host) {
+  const data = await api("/api/rooms");
+  host.replaceChildren();
+  const byRoom = {};
+  for (const a of data.admissions) byRoom[a.room_id] = a;
+  const grid = el("div", "grid2");
+  for (const r of data.rooms) {
+    const box = el("div", `room ${r.occupied ? "busy" : ""}`);
+    box.append(el("b", null, r.room_id), el("div", "muted", `${r.department} · ${r.type}`));
+    const a = byRoom[r.room_id];
+    box.append(a ? el("div", "who", a.patient_name || a.case_id) : el("div", "tiny muted", "free"));
+    grid.append(box);
+  }
+  const free = data.rooms.filter((r) => !r.occupied).length;
+  host.append(el("p", "small muted", `${free} of ${data.rooms.length} rooms free.`), grid);
+}
 
 async function selectCase(caseId) {
-  selected = caseId;
-  cachedNote = null;
+  selected = caseId; cachedNote = null;
   $("detail-title").textContent = caseId;
-  await refreshQueue();
-  await renderDetail();
+  await refreshQueue(); await renderDetail();
 }
-
-async function loadNote() {
-  if (!cachedNote) cachedNote = await api(`/api/cases/${selected}/note`);
-  return cachedNote;
-}
+const loadNote = async () => (cachedNote ||= await api(`/api/cases/${selected}/note`));
 
 async function renderDetail() {
   if (!selected) return;
-  const detail = $("detail");
-  detail.replaceChildren(el("div", "empty", "Loading…"));
-
+  const d = $("detail");
+  d.replaceChildren(el("div", "empty", "Loading…"));
   try {
-    if (tab === "case") await renderCase(detail);
-    else if (tab === "note") await renderNote(detail);
-    else if (tab === "transport") await renderTransport(detail);
-    else await renderMail(detail);
-  } catch (err) {
-    detail.replaceChildren(el("div", "empty", `Could not load: ${err.message}`));
-  }
+    if (tab === "case") await renderCase(d);
+    else if (tab === "convo") await renderConvo(d);
+    else if (tab === "note") await renderNote(d);
+    else await renderMail(d);
+  } catch (err) { d.replaceChildren(el("div", "empty", `Could not load: ${err.message}`)); }
 }
 
-async function renderCase(detail) {
-  const [kase, note] = await Promise.all([api(`/api/cases/${selected}`), loadNote()]);
-  detail.replaceChildren();
-
+async function renderCase(d) {
+  const kase = await api(`/api/cases/${selected}`);
+  const note = await loadNote();
+  d.replaceChildren();
   const rec = note.recommendation || {};
 
-  /* headline */
   const head = el("div");
-  head.style.cssText = "display:flex;align-items:center;gap:10px;flex-wrap:wrap";
+  head.style.cssText = "display:flex;align-items:center;gap:9px;flex-wrap:wrap";
   if (rec.urgency) head.append(el("span", `urgency ${rec.urgency}`, rec.urgency));
-  if (kase.overridden) {
-    head.append(el("span", "tiny muted", `system said ${kase.system_urgency}`));
-  }
+  if (kase.overridden) head.append(el("span", "tiny muted", `system said ${kase.system_urgency}`));
   head.append(el("strong", null, rec.department || "—"));
-  for (const flag of kase.red_flags || []) head.append(el("span", "flag", flag));
-  detail.append(head);
+  if (note.patient && note.patient.name) head.append(el("span", "tiny muted", note.patient.name));
+  for (const f of kase.red_flags || []) head.append(el("span", "flag", f));
+  d.append(head);
 
-  if (note.routing) detail.append(el("div", "banner info", note.routing));
-
+  if (note.routing) d.append(el("div", "banner info", note.routing));
   if (rec.requires_human_review) {
-    const reasons = (note.escalation.reasons || []).map((r) => r.explanation).join(" ");
-    detail.append(el("div", "banner warn", `Human review required. ${reasons}`));
+    d.append(el("div", "banner warn",
+      `Human review required. ${(note.escalation.reasons || []).map((r) => r.explanation).join(" ")}`));
   }
-
   if (note.system_mode && note.system_mode !== "FULL") {
-    detail.append(el("div", "banner stop",
-      `Decided in ${note.system_mode} mode — language understanding was unavailable.`));
+    d.append(el("div", "banner stop", `Decided in ${note.system_mode} mode.`));
   }
 
-  /* what the patient actually said */
-  const said = (kase.turns || []).filter((t) => t.role === "patient");
+  if (note.clinical_impression) {
+    const box = el("div", "impression");
+    box.append(el("span", "tag", "AI impression — not a diagnosis"),
+               document.createTextNode(note.clinical_impression));
+    d.append(section("What the assistant makes of it", box));
+  }
+
+  const said = (note.conversation || []).filter((t) => t.role === "patient");
   if (said.length) {
     const box = el("div");
-    for (const turn of said) {
-      const q = el("p", "verbatim", turn.text);
-      q.style.marginBottom = "8px";
-      box.append(q);
-    }
-    detail.append(section(`Patient's own words (${kase.language})`, box));
+    for (const t of said.slice(0, 3)) box.append(el("p", "verbatim", t.text));
+    d.append(section(`Patient's own words (${kase.language})`, box));
   }
 
-  /* reasoning */
   if (note.reasoning && note.reasoning.length) {
     const box = el("div");
     for (const r of note.reasoning) {
       const row = el("div", "reason");
-      const head2 = el("div");
+      const h = el("div");
       const chip = el("span", "rule-chip", r.rule_id);
       chip.onclick = () => showRule(r.rule_id);
-      head2.append(chip, ` ${r.urgency} · ${r.department}`);
-      row.append(head2, el("div", "cond", r.rationale));
+      h.append(chip, ` ${r.urgency} · ${r.department}`);
+      row.append(h, el("div", "cond", r.rationale));
       for (const c of r.conditions_met || []) row.append(el("div", "cond", `✓ ${c}`));
       row.append(el("div", "src", r.source));
       box.append(row);
     }
-    detail.append(section("Rules applied", box));
+    d.append(section("Rules applied", box));
   } else {
-    detail.append(section("Rules applied",
-      el("div", "muted small", "No rule matched the established facts.")));
+    d.append(section("Rules applied", el("div", "muted small", "No rule matched.")));
   }
 
-  /* the three views */
-  detail.append(section("Patient reported", list(note.patient_reported)));
-  detail.append(section("Established by follow-up", list(note.established_by_followup)));
-  if (note.recalled_from_records && note.recalled_from_records.length) {
-    detail.append(section("Recalled from previous visits", list(note.recalled_from_records)));
+  d.append(section("Patient reported", list(note.patient_reported)));
+  d.append(section("Established by follow-up", list(note.established_by_followup)));
+  if (note.memory && note.memory.length) {
+    d.append(section("Remembered from previous visits",
+      list(note.memory.map((m) => `[${m.kind}] ${m.text}`))));
   }
-  detail.append(section("Unknown", list(note.unknown, "unknown-list")));
-
+  d.append(section("Unknown", list(note.unknown, "unknown-list")));
   if (note.contradictions && note.contradictions.length) {
-    detail.append(section("Conflicting answers — not resolved by VITA",
-      list(note.contradictions, "unknown-list")));
+    d.append(section("Conflicting answers — not resolved by VITA", list(note.contradictions, "unknown-list")));
   }
-
   if (note.unresolved_rules && note.unresolved_rules.length) {
     const box = el("div");
     for (const r of note.unresolved_rules) {
       const row = el("div", "reason");
       const chip = el("span", "rule-chip", r.rule_id);
       chip.onclick = () => showRule(r.rule_id);
-      const head3 = el("div");
-      head3.append(chip, ` ${r.urgency} — could not be ruled out`);
-      row.append(head3);
+      const h = el("div"); h.append(chip, ` ${r.urgency} — could not be ruled out`);
+      row.append(h);
       for (const w of r.waiting_on) row.append(el("div", "cond", `waiting on: ${w}`));
       box.append(row);
     }
-    detail.append(section("Could not be ruled out", box));
+    d.append(section("Could not be ruled out", box));
   }
 
-  /* clinician actions */
   const actions = el("div", "actions");
-  const select = el("select");
-  for (const level of ["CRITICAL", "HIGH", "MODERATE", "LOW"]) {
-    const option = el("option", null, level);
-    option.value = level;
-    if (level === rec.urgency) option.selected = true;
-    select.append(option);
+  const sel = el("select");
+  for (const lvl of ["CRITICAL", "HIGH", "MODERATE", "LOW"]) {
+    const o = el("option", null, lvl); o.value = lvl;
+    if (lvl === rec.urgency) o.selected = true;
+    sel.append(o);
   }
-  const reason = el("input");
-  reason.type = "text";
-  reason.placeholder = "Reason for override";
-  reason.style.flex = "1";
-  reason.style.minWidth = "160px";
-
+  const reason = el("input"); reason.type = "text"; reason.placeholder = "Reason for override";
+  reason.style.cssText = "flex:1;min-width:150px";
   const apply = el("button", "primary", "Override");
   apply.onclick = async () => {
     if (!reason.value.trim()) { alert("An override needs a reason."); return; }
@@ -373,160 +471,116 @@ async function renderCase(detail) {
     try {
       await api(`/api/cases/${selected}/override`, {
         method: "POST",
-        body: JSON.stringify({ urgency: select.value, reason: reason.value.trim(), by: "Dr. on duty" }),
+        body: JSON.stringify({ urgency: sel.value, reason: reason.value.trim(), by: "Dr. on duty" }),
       });
-      cachedNote = null;
-      await refreshQueue();
-      await renderDetail();
-    } catch (err) {
-      alert(`Override failed: ${err.message}`);
-    } finally { apply.disabled = false; }
+      cachedNote = null; await refreshQueue(); await renderDetail();
+    } catch (err) { alert(err.message); } finally { apply.disabled = false; }
   };
-
   const done = el("button", null, "Mark reviewed");
   done.onclick = async () => {
-    await api(`/api/cases/${selected}/review`, {
-      method: "POST", body: JSON.stringify({ by: "Dr. on duty" }),
-    });
-    cachedNote = null;
-    await refreshQueue();
-    await renderDetail();
+    await api(`/api/cases/${selected}/review`, { method: "POST", body: JSON.stringify({ by: "Dr. on duty" }) });
+    cachedNote = null; await refreshQueue(); await renderDetail();
   };
-
-  actions.append(select, reason, apply, done);
-  detail.append(section("Clinician action", actions));
+  actions.append(sel, reason, apply, done);
+  d.append(section("Clinician action", actions));
 
   if (kase.override && kase.override.urgency) {
-    detail.append(el("div", "banner info",
+    d.append(el("div", "banner info",
       `Overridden to ${kase.override.urgency} by ${kase.override.by}: ${kase.override.reason}`));
   }
 
-  /* audit */
   if (note.audit && note.audit.length) {
     const ul = el("ul", "trail");
-    for (const entry of note.audit) {
+    for (const e of note.audit) {
       const li = el("li");
-      li.append(
-        el("span", "at", (entry.at || "").replace("T", " ").replace("+00:00", "")),
-        el("span", "act", entry.action.replace(/_/g, " ")),
-        el("span", "dt", entry.detail || "")
-      );
+      li.append(el("span", "at", (e.at || "").replace("T", " ").replace("+00:00", "")),
+                el("span", "act", e.action.replace(/_/g, " ")),
+                el("span", null, e.detail || ""));
       ul.append(li);
     }
-    detail.append(section("Audit trail", ul));
+    d.append(section("Audit trail", ul));
   }
 }
 
-async function renderNote(detail) {
+async function renderConvo(d) {
   const note = await loadNote();
-  detail.replaceChildren();
-  detail.append(el("pre", "note-text", note.text || "Intake not yet complete."));
+  d.replaceChildren();
+  const turns = note.conversation || [];
+  if (!turns.length) { d.append(el("div", "empty", "No conversation recorded.")); return; }
+  const box = el("div", "convo");
+  for (const t of turns) {
+    const row = el("div", `turn ${t.role}`);
+    const bub = el("div", "bub");
+    bub.append(el("div", "who", t.role === "patient" ? "Patient" : "VITA"));
+    bub.append(document.createTextNode(t.text));
+    row.append(bub);
+    box.append(row);
+  }
+  d.append(box);
 }
 
-async function renderMail(detail) {
+async function renderNote(d) {
   const note = await loadNote();
-  detail.replaceChildren();
+  d.replaceChildren(el("pre", "note-text", note.text || "Intake not yet complete."));
+}
 
-  const messages = note.notifications || [];
-  if (!messages.length) {
-    detail.append(el("div", "empty", "No notification was sent for this case."));
+async function renderMail(d) {
+  const note = await loadNote();
+  d.replaceChildren();
+  const msgs = note.notifications || [];
+  if (!msgs.length) {
+    d.append(el("div", "empty", "No email sent for this case."));
+    const hint = el("div", "small muted");
+    hint.style.cssText = "padding:0 18px 22px;text-align:center";
+    hint.textContent = "Email goes out when a notify request is approved in the Requests panel.";
+    d.append(hint);
     return;
   }
-
-  for (const message of messages) {
+  for (const m of msgs) {
     const box = el("div", "mail");
     const head = el("div", "mail-head");
-    head.append(
-      el("div", null, `To: ${message.recipient_name} <${message.recipient}>`),
-      el("div", "tiny muted", message.subject),
-      el("div", "tiny", message.status)
-    );
+    head.append(el("div", null, `To: ${m.recipient_name} <${m.recipient}>`),
+                el("div", "tiny muted", m.subject),
+                el("div", "tiny", m.status));
     const body = el("div", "mail-body");
-    body.append(el("pre", "note-text", message.body));
+    body.append(el("pre", "note-text", m.body));
     box.append(head, body);
-    detail.append(box);
-  }
-}
-
-async function renderTransport(detail) {
-  const data = await api(`/api/ambulance?case_id=${selected}`);
-  detail.replaceChildren();
-
-  if (!data.requests.length) {
-    detail.append(el("div", "empty", "No transport request for this case."));
-    const note = el("div", "small muted");
-    note.style.cssText = "padding:0 20px 24px;text-align:center";
-    note.textContent =
-      "VITA offers transport for HIGH and CRITICAL cases but never raises a " +
-      "request itself. One appears here only after a person has confirmed it " +
-      "and given a pickup location.";
-    detail.append(note);
-    return;
-  }
-
-  for (const r of data.requests) {
-    const box = el("div", "mail");
-    const head = el("div", "mail-head");
-    head.append(
-      el("strong", null, `${r.request_id} — ${r.priority}`),
-      el("div", "tiny muted", `${r.status.replace(/_/g, " ")} · confirmed by ${r.confirmed_by} · ${r.at.replace("T", " ").replace("+00:00", "")}`)
-    );
-
-    const body = el("div", "mail-body");
-    const dl = el("dl", "kv");
-    for (const [k, v] of [
-      ["Case", r.case_id],
-      ["Pickup", r.pickup_location],
-      ["Destination", r.destination],
-      ["Priority", r.priority],
-    ]) {
-      dl.append(el("dt", null, k), el("dd", null, v));
-    }
-    body.append(dl);
-    body.append(el("div", "tiny muted", "A request for dispatch, not a dispatch. Allocation is made by emergency operations."));
-    box.append(head, body);
-    detail.append(box);
+    d.append(box);
   }
 }
 
 async function showRule(ruleId) {
   try {
-    const rule = await api(`/api/rules/${ruleId}`);
-    const conditions = rule.conditions.map((c) => `  • ${c.fact} ${c.op} ${c.value}`).join("\n");
-    alert(
-      `${rule.rule_id} — ${rule.urgency}, ${rule.department}\n\n${rule.rationale}\n\n` +
-      `Conditions (all must hold):\n${conditions}\n\nSource: ${rule.source}\nVersion: ${rule.version}`
-    );
-  } catch {
-    alert(`Rule ${ruleId} could not be loaded.`);
-  }
+    const r = await api(`/api/rules/${ruleId}`);
+    const c = r.conditions.map((x) => `  • ${x.fact} ${x.op} ${x.value}`).join("\n");
+    alert(`${r.rule_id} — ${r.urgency}, ${r.department}\n\n${r.rationale}\n\nConditions:\n${c}\n\nSource: ${r.source}`);
+  } catch { alert(`Rule ${ruleId} could not be loaded.`); }
 }
 
-/* ---------- wiring ---------- */
-
-for (const button of document.querySelectorAll(".filters button[data-status]")) {
-  button.onclick = () => {
-    document.querySelectorAll(".filters button[data-status]").forEach((b) => b.classList.remove("on"));
-    button.classList.add("on");
-    filter = button.dataset.status;
-    refreshQueue();
+for (const b of document.querySelectorAll(".filters button[data-status]")) {
+  b.onclick = () => {
+    document.querySelectorAll(".filters button[data-status]").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on"); filter = b.dataset.status; refreshQueue();
   };
 }
-
-for (const button of document.querySelectorAll(".tabs button")) {
-  button.onclick = () => {
-    document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("on"));
-    button.classList.add("on");
-    tab = button.dataset.tab;
-    renderDetail();
+for (const b of document.querySelectorAll("#case-tabs button")) {
+  b.onclick = () => {
+    document.querySelectorAll("#case-tabs button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on"); tab = b.dataset.tab; renderDetail();
   };
 }
-
-$("refresh").onclick = () => { refreshQueue(); refreshStatus(); };
+for (const b of document.querySelectorAll("#hosp-tabs button")) {
+  b.onclick = () => {
+    document.querySelectorAll("#hosp-tabs button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on"); hospTab = b.dataset.h; renderHospital();
+  };
+}
+$("refresh").onclick = () => { refreshQueue(); refreshStatus(); renderHospital(); };
 
 refreshStatus();
 refreshQueue();
-setInterval(refreshQueue, 8000);
+renderHospital();
+setInterval(() => { refreshQueue(); if (hospTab === "requests") renderHospital(); }, 8000);
 setInterval(refreshStatus, 15000);
 </script>
 </body>

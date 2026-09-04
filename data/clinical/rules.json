@@ -1,0 +1,578 @@
+{
+  "version": "1.0",
+  "disclaimer": "Synthetic triage rules written for a hackathon demonstration. Adapted in spirit from publicly described triage frameworks (Emergency Severity Index, Manchester Triage System discriminators). NOT clinically validated and NOT for real patient care.",
+  "urgency_levels": {
+    "CRITICAL": "Immediate clinical attention. Time-critical presentation.",
+    "HIGH": "Urgent assessment. Must be seen ahead of routine attendances.",
+    "MODERATE": "Standard assessment within the normal departmental queue.",
+    "LOW": "Routine assessment. No time-critical feature identified."
+  },
+  "rules": [
+    {
+      "rule_id": "CP-01",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "breathing_difficulty", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Chest pain accompanied by breathing difficulty is treated as a potential cardiac or pulmonary emergency until a clinician excludes one.",
+      "source": "Manchester Triage System - cardiac pain with dyspnoea discriminator"
+    },
+    {
+      "rule_id": "CP-02",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "pain_radiating", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Chest pain radiating to the arm, jaw, neck or back is a recognised feature of acute coronary syndrome and requires urgent assessment.",
+      "source": "Manchester Triage System - cardiac pain discriminator"
+    },
+    {
+      "rule_id": "CP-03",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "sweating", "op": "is", "value": true},
+        {"fact": "nausea", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Chest pain with sweating and nausea together form an autonomic pattern associated with acute coronary events.",
+      "source": "Manchester Triage System - cardiac pain discriminator"
+    },
+    {
+      "rule_id": "CP-04",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "fainting", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Chest pain with loss of consciousness suggests haemodynamic compromise and is time-critical.",
+      "source": "Emergency Severity Index - level 1 high-risk presentation"
+    },
+    {
+      "rule_id": "CP-05",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "severity", "op": "gte", "value": 7}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Severe chest pain, reported at 7 or above out of 10, warrants urgent assessment regardless of other features.",
+      "source": "Manchester Triage System - severe pain discriminator"
+    },
+    {
+      "rule_id": "CP-06",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "known_cardiac_history", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Cardiology",
+      "requires_human_review": true,
+      "rationale": "Chest pain in a patient with known cardiac disease carries a materially higher pre-test probability of a cardiac cause.",
+      "source": "Emergency Severity Index - high-risk history"
+    },
+    {
+      "rule_id": "CP-07",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "age_years", "op": "gte", "value": 40},
+        {"fact": "onset_hours", "op": "lte", "value": 12}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "New chest pain within the last twelve hours in a patient aged 40 or over is treated as possible acute coronary syndrome pending assessment.",
+      "source": "Emergency Severity Index - age-weighted cardiac risk"
+    },
+    {
+      "rule_id": "CP-08",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "pain_on_breathing", "op": "is", "value": true},
+        {"fact": "fever", "op": "is", "value": true}
+      ],
+      "urgency": "MODERATE",
+      "department": "General Medicine",
+      "requires_human_review": false,
+      "rationale": "Chest pain that worsens on breathing, together with fever, points towards a respiratory rather than cardiac cause and can follow the standard pathway.",
+      "source": "Manchester Triage System - pleuritic pain pattern"
+    },
+    {
+      "rule_id": "CP-09",
+      "complaint": "chest_pain",
+      "conditions": [
+        {"fact": "chest_pain", "op": "is", "value": true},
+        {"fact": "pain_reproducible_on_pressure", "op": "is", "value": true},
+        {"fact": "breathing_difficulty", "op": "is", "value": false},
+        {"fact": "pain_radiating", "op": "is", "value": false},
+        {"fact": "severity", "op": "lt", "value": 4}
+      ],
+      "urgency": "LOW",
+      "department": "General Medicine",
+      "requires_human_review": false,
+      "rationale": "Mild chest wall pain reproducible on pressure, with no dyspnoea and no radiation, is consistent with a musculoskeletal cause. Note that every cardiac feature must be explicitly excluded before this rule can fire.",
+      "source": "Manchester Triage System - chest wall pain pattern"
+    },
+
+    {
+      "rule_id": "FV-01",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "neck_stiffness", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Fever with neck stiffness is treated as possible meningitis, which is time-critical.",
+      "source": "Manchester Triage System - meningism discriminator"
+    },
+    {
+      "rule_id": "FV-02",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "rash_non_blanching", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "A non-blanching rash with fever is treated as possible meningococcal sepsis and cannot wait.",
+      "source": "Manchester Triage System - purpuric rash discriminator"
+    },
+    {
+      "rule_id": "FV-03",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "confusion", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Altered mental state with fever is a recognised marker of sepsis or central nervous system infection.",
+      "source": "Emergency Severity Index - altered mental status"
+    },
+    {
+      "rule_id": "FV-04",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "temperature_c", "op": "gte", "value": 40}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "A temperature of 40 degrees Celsius or above is a hyperpyrexia threshold requiring urgent assessment.",
+      "source": "Manchester Triage System - very hot discriminator"
+    },
+    {
+      "rule_id": "FV-05",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "breathing_difficulty", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Fever with breathing difficulty suggests a lower respiratory tract infection with respiratory compromise.",
+      "source": "Manchester Triage System - respiratory distress with infection"
+    },
+    {
+      "rule_id": "FV-06",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "immunocompromised", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "General Medicine",
+      "requires_human_review": true,
+      "rationale": "Fever in an immunocompromised patient may represent neutropenic sepsis and is treated as urgent regardless of how well the patient appears.",
+      "source": "Emergency Severity Index - high-risk immunosuppression"
+    },
+    {
+      "rule_id": "FV-07",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "temperature_c", "op": "gte", "value": 38},
+        {"fact": "duration_days", "op": "gte", "value": 5}
+      ],
+      "urgency": "MODERATE",
+      "department": "General Medicine",
+      "requires_human_review": false,
+      "rationale": "A fever persisting five days or more warrants assessment for a cause but has no time-critical feature.",
+      "source": "Manchester Triage System - prolonged fever"
+    },
+    {
+      "rule_id": "FV-08",
+      "complaint": "fever",
+      "conditions": [
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "temperature_c", "op": "lt", "value": 38.5},
+        {"fact": "duration_days", "op": "lte", "value": 2},
+        {"fact": "confusion", "op": "is", "value": false},
+        {"fact": "breathing_difficulty", "op": "is", "value": false},
+        {"fact": "neck_stiffness", "op": "is", "value": false}
+      ],
+      "urgency": "LOW",
+      "department": "General Medicine",
+      "requires_human_review": false,
+      "rationale": "A short-lived low-grade fever with no red-flag feature follows the routine pathway. Each red flag must be explicitly excluded, not merely unmentioned.",
+      "source": "Manchester Triage System - uncomplicated febrile illness"
+    },
+
+    {
+      "rule_id": "BR-01",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "speaking_full_sentences", "op": "is", "value": false}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Inability to complete a sentence in one breath indicates severe respiratory distress.",
+      "source": "Manchester Triage System - unable to talk in sentences"
+    },
+    {
+      "rule_id": "BR-02",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "lips_blue", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Visible cyanosis with breathing difficulty indicates significant hypoxia.",
+      "source": "Manchester Triage System - cyanosis discriminator"
+    },
+    {
+      "rule_id": "BR-03",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "sudden_onset", "op": "is", "value": true},
+        {"fact": "chest_pain", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Sudden breathlessness with chest pain is treated as possible pulmonary embolism or pneumothorax.",
+      "source": "Emergency Severity Index - level 1 high-risk presentation"
+    },
+    {
+      "rule_id": "BR-04",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "known_asthma", "op": "is", "value": true},
+        {"fact": "wheezing", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "An asthmatic patient with active wheeze and breathlessness may be in an acute exacerbation, which can deteriorate quickly.",
+      "source": "Manchester Triage System - acute asthma pathway"
+    },
+    {
+      "rule_id": "BR-05",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "fever", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Breathlessness with fever suggests pneumonia or another infective respiratory cause with systemic involvement.",
+      "source": "Manchester Triage System - respiratory infection with distress"
+    },
+    {
+      "rule_id": "BR-06",
+      "complaint": "breathing_difficulty",
+      "conditions": [
+        {"fact": "breathing_difficulty", "op": "is", "value": true},
+        {"fact": "onset_hours", "op": "gte", "value": 168},
+        {"fact": "speaking_full_sentences", "op": "is", "value": true},
+        {"fact": "lips_blue", "op": "is", "value": false},
+        {"fact": "chest_pain", "op": "is", "value": false}
+      ],
+      "urgency": "MODERATE",
+      "department": "Pulmonology",
+      "requires_human_review": false,
+      "rationale": "Breathlessness present for a week or more, with speech intact and no cyanosis or chest pain, is a chronic presentation suitable for the standard respiratory pathway.",
+      "source": "Manchester Triage System - chronic breathlessness"
+    },
+
+    {
+      "rule_id": "IN-01",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "bleeding_uncontrolled", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Bleeding that cannot be controlled by direct pressure is immediately life-threatening.",
+      "source": "Manchester Triage System - exsanguinating haemorrhage"
+    },
+    {
+      "rule_id": "IN-02",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "head_injury", "op": "is", "value": true},
+        {"fact": "loss_of_consciousness", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Head injury with any loss of consciousness requires immediate assessment for intracranial injury.",
+      "source": "Manchester Triage System - head injury with reduced consciousness"
+    },
+    {
+      "rule_id": "IN-03",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "head_injury", "op": "is", "value": true},
+        {"fact": "on_anticoagulants", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Head injury in a patient taking anticoagulants carries a substantially raised risk of delayed intracranial bleeding, even when the patient currently appears well.",
+      "source": "Emergency Severity Index - anticoagulation as a high-risk modifier"
+    },
+    {
+      "rule_id": "IN-04",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "mechanism_high_energy", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "A high-energy mechanism such as a road traffic collision or a fall from height can conceal serious injury behind an unremarkable initial appearance.",
+      "source": "Emergency Severity Index - mechanism of injury"
+    },
+    {
+      "rule_id": "IN-05",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "deformity_visible", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Orthopaedics",
+      "requires_human_review": false,
+      "rationale": "Visible limb deformity indicates probable fracture or dislocation needing prompt orthopaedic assessment.",
+      "source": "Manchester Triage System - obvious deformity"
+    },
+    {
+      "rule_id": "IN-06",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "can_bear_weight", "op": "is", "value": false},
+        {"fact": "bleeding_uncontrolled", "op": "is", "value": false}
+      ],
+      "urgency": "MODERATE",
+      "department": "Orthopaedics",
+      "requires_human_review": false,
+      "rationale": "Inability to bear weight after a limb injury warrants imaging but carries no immediate threat.",
+      "source": "Manchester Triage System - weight-bearing assessment"
+    },
+    {
+      "rule_id": "IN-07",
+      "complaint": "injury",
+      "conditions": [
+        {"fact": "injury", "op": "is", "value": true},
+        {"fact": "bleeding_uncontrolled", "op": "is", "value": false},
+        {"fact": "head_injury", "op": "is", "value": false},
+        {"fact": "deformity_visible", "op": "is", "value": false},
+        {"fact": "can_bear_weight", "op": "is", "value": true},
+        {"fact": "mechanism_high_energy", "op": "is", "value": false}
+      ],
+      "urgency": "LOW",
+      "department": "Orthopaedics",
+      "requires_human_review": false,
+      "rationale": "A minor injury with no bleeding, no head involvement, no deformity and preserved function follows the routine pathway.",
+      "source": "Manchester Triage System - minor limb injury"
+    },
+
+    {
+      "rule_id": "AB-01",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "rigid_abdomen", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "A rigid abdomen suggests peritonitis, which is a surgical emergency.",
+      "source": "Manchester Triage System - peritonism discriminator"
+    },
+    {
+      "rule_id": "AB-02",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "vomiting_blood", "op": "is", "value": true}
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Vomiting blood indicates active upper gastrointestinal bleeding.",
+      "source": "Manchester Triage System - haematemesis"
+    },
+    {
+      "rule_id": "AB-03",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "black_stool", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Black tarry stool indicates gastrointestinal bleeding that has already occurred and may be ongoing.",
+      "source": "Manchester Triage System - melaena"
+    },
+    {
+      "rule_id": "AB-04",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "pregnancy", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Abdominal pain in pregnancy requires urgent obstetric input; ectopic pregnancy and placental complications are time-critical.",
+      "source": "Manchester Triage System - abdominal pain in pregnancy"
+    },
+    {
+      "rule_id": "AB-05",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "sudden_severe_onset", "op": "is", "value": true},
+        {"fact": "severity", "op": "gte", "value": 7}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Abdominal pain that begins suddenly and is severe may indicate perforation, obstruction or vascular catastrophe.",
+      "source": "Manchester Triage System - severe pain of sudden onset"
+    },
+    {
+      "rule_id": "AB-06",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "testicular_pain", "op": "is", "value": true}
+      ],
+      "urgency": "HIGH",
+      "department": "Surgery",
+      "requires_human_review": true,
+      "rationale": "Lower abdominal pain with testicular pain raises the possibility of testicular torsion, where delay costs the testis.",
+      "source": "Manchester Triage System - testicular pain discriminator"
+    },
+    {
+      "rule_id": "AB-07",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "fever", "op": "is", "value": true},
+        {"fact": "severity", "op": "gte", "value": 5}
+      ],
+      "urgency": "MODERATE",
+      "department": "Surgery",
+      "requires_human_review": false,
+      "rationale": "Abdominal pain with fever suggests an inflammatory or infective cause such as appendicitis and needs surgical assessment.",
+      "source": "Manchester Triage System - abdominal pain with pyrexia"
+    },
+    {
+      "rule_id": "AB-08",
+      "complaint": "abdominal_pain",
+      "conditions": [
+        {"fact": "abdominal_pain", "op": "is", "value": true},
+        {"fact": "severity", "op": "lte", "value": 3},
+        {"fact": "vomiting_blood", "op": "is", "value": false},
+        {"fact": "black_stool", "op": "is", "value": false},
+        {"fact": "rigid_abdomen", "op": "is", "value": false},
+        {"fact": "pregnancy", "op": "is", "value": false}
+      ],
+      "urgency": "LOW",
+      "department": "General Medicine",
+      "requires_human_review": false,
+      "rationale": "Mild abdominal pain with every red-flag feature explicitly excluded follows the routine pathway.",
+      "source": "Manchester Triage System - uncomplicated abdominal pain"
+    },
+
+    {
+      "rule_id": "GEN-01",
+      "complaint": "general",
+      "conditions": [
+        {"fact": "prior_visit_72h_same_complaint", "op": "is", "value": true}
+      ],
+      "urgency": "MODERATE",
+      "department": "Triage Desk",
+      "requires_human_review": true,
+      "rationale": "A patient returning within 72 hours with the same unresolved complaint is a recognised marker of a missed or deteriorating condition, and is reviewed by a clinician regardless of how the presentation scores on its own.",
+      "source": "Emergency Severity Index - unscheduled re-presentation"
+    },
+    {
+      "rule_id": "GEN-02",
+      "complaint": "general",
+      "conditions": [
+        {"fact": "age_years", "op": "gte", "value": 75},
+        {"fact": "severity", "op": "gte", "value": 5}
+      ],
+      "urgency": "MODERATE",
+      "department": "General Medicine",
+      "requires_human_review": true,
+      "rationale": "Older patients frequently under-report symptom severity and deteriorate with fewer warning signs, so moderate or worse pain in this group is reviewed by a clinician.",
+      "source": "Emergency Severity Index - age as a high-risk modifier"
+    },
+    {
+      "rule_id": "GEN-03",
+      "complaint": "general",
+      "conditions": [
+        {"fact": "pregnancy", "op": "is", "value": true},
+        {"fact": "severity", "op": "gte", "value": 5}
+      ],
+      "urgency": "HIGH",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Significant pain during pregnancy requires obstetric assessment that this rule set is not equipped to provide.",
+      "source": "Manchester Triage System - pregnancy as a high-risk modifier"
+    }
+  ]
+}

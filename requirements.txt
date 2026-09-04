@@ -19,3 +19,9 @@ google-genai>=1.0
 # at this corpus size an index costs more startup time than it saves, and it is
 # one more dependency that can fail on a machine we do not control.
 numpy>=1.26
+
+# --- tool protocol ------------------------------------------------------
+# The same tool layer the application uses is published over MCP stdio, so an
+# external client can drive VITA with the identical implementation. Local
+# transport only; nothing here goes over the network.
+mcp>=1.2

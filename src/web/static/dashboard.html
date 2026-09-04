@@ -123,6 +123,7 @@
         <button data-tab="case" class="on">Case</button>
         <button data-tab="note">Note</button>
         <button data-tab="mail">Notifications</button>
+        <button data-tab="transport">Transport</button>
       </div>
     </div>
     <div class="panel-body" id="detail">
@@ -253,6 +254,7 @@ async function renderDetail() {
   try {
     if (tab === "case") await renderCase(detail);
     else if (tab === "note") await renderNote(detail);
+    else if (tab === "transport") await renderTransport(detail);
     else await renderMail(detail);
   } catch (err) {
     detail.replaceChildren(el("div", "empty", `Could not load: ${err.message}`));
@@ -440,6 +442,47 @@ async function renderMail(detail) {
     );
     const body = el("div", "mail-body");
     body.append(el("pre", "note-text", message.body));
+    box.append(head, body);
+    detail.append(box);
+  }
+}
+
+async function renderTransport(detail) {
+  const data = await api(`/api/ambulance?case_id=${selected}`);
+  detail.replaceChildren();
+
+  if (!data.requests.length) {
+    detail.append(el("div", "empty", "No transport request for this case."));
+    const note = el("div", "small muted");
+    note.style.cssText = "padding:0 20px 24px;text-align:center";
+    note.textContent =
+      "VITA offers transport for HIGH and CRITICAL cases but never raises a " +
+      "request itself. One appears here only after a person has confirmed it " +
+      "and given a pickup location.";
+    detail.append(note);
+    return;
+  }
+
+  for (const r of data.requests) {
+    const box = el("div", "mail");
+    const head = el("div", "mail-head");
+    head.append(
+      el("strong", null, `${r.request_id} — ${r.priority}`),
+      el("div", "tiny muted", `${r.status.replace(/_/g, " ")} · confirmed by ${r.confirmed_by} · ${r.at.replace("T", " ").replace("+00:00", "")}`)
+    );
+
+    const body = el("div", "mail-body");
+    const dl = el("dl", "kv");
+    for (const [k, v] of [
+      ["Case", r.case_id],
+      ["Pickup", r.pickup_location],
+      ["Destination", r.destination],
+      ["Priority", r.priority],
+    ]) {
+      dl.append(el("dt", null, k), el("dd", null, v));
+    }
+    body.append(dl);
+    body.append(el("div", "tiny muted", "A request for dispatch, not a dispatch. Allocation is made by emergency operations."));
     box.append(head, body);
     detail.append(box);
   }

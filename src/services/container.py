@@ -35,6 +35,8 @@ from ..orchestrator.intake import IntakeOrchestrator, TurnResult
 from ..rag.retriever import Retriever
 from ..store.cases import CaseStore
 from ..store.hospital import HospitalDirectory
+from ..tools import Tier
+from .ambulance import AmbulanceService
 from .notify import Notifier
 
 logger = logging.getLogger(__name__)
@@ -81,6 +83,12 @@ class VitaServices:
         self.cases = CaseStore()
         self.hospital = HospitalDirectory()
         self.notifier = Notifier()
+        self.ambulance = AmbulanceService()
+
+        # Built last: the tool layer reaches back into everything above it.
+        from ..tools import ToolLayer
+
+        self.tools = ToolLayer(self)
 
         self._live: dict[str, Case] = {}
 
@@ -102,6 +110,15 @@ class VitaServices:
                 "dry_run": not self.settings.notify_enabled,
                 "sent": len(self.notifier.outbox),
             },
+            "tools": {
+                "retrieval": self.tools.names(tier=Tier.RETRIEVAL),
+                "decision": self.tools.names(tier=Tier.DECISION),
+                "note": (
+                    "Decision tools are reachable over MCP by a deliberate client "
+                    "but are never advertised to the conversation model."
+                ),
+            },
+            "ambulance": {"requests": len(self.ambulance.requests)},
         }
 
     # -- intake ----------------------------------------------------------

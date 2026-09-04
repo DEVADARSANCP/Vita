@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field
 
 from ..config import APP_NAME, APP_VERSION, Settings, load_settings
 from ..services.container import VitaServices
+from ..tools import Tier
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,11 @@ class OverrideRequest(BaseModel):
 
 class ReviewRequest(BaseModel):
     by: str = Field(default="clinician", max_length=120)
+
+
+class AmbulanceRequestBody(BaseModel):
+    pickup_location: str = Field(default="", max_length=300)
+    confirmed_by: str = Field(default="", max_length=120)
 
 
 def create_app(settings: Settings | None = None, services: VitaServices | None = None) -> FastAPI:
@@ -189,6 +195,55 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
         if case is None:
             raise HTTPException(status_code=404, detail=f"no case {case_id}")
         return JSONResponse(case.as_dict(full=False))
+
+    # -- emergency transport ---------------------------------------------
+
+    @app.post("/api/cases/{case_id}/ambulance")
+    def request_ambulance(case_id: str, body: AmbulanceRequestBody) -> JSONResponse:
+        """Raise a transport request on explicit confirmation.
+
+        Every precondition is enforced in the service, not here: the case must
+        already be graded HIGH or CRITICAL by the rule engine, a pickup location
+        must be given, and a person must be named as confirming. VITA offers;
+        it does not request.
+        """
+        result = services.tools.call(
+            "create_ambulance_request",
+            {
+                "case_id": case_id,
+                "pickup_location": body.pickup_location,
+                "confirmed_by": body.confirmed_by,
+            },
+        )
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return JSONResponse(result)
+
+    @app.get("/api/ambulance")
+    def ambulance(case_id: str = "") -> JSONResponse:
+        return JSONResponse(services.tools.call("get_ambulance_status", {"case_id": case_id}))
+
+    # -- tool surface ------------------------------------------------------
+
+    @app.get("/api/tools")
+    def tools() -> JSONResponse:
+        """The tool surface, split by who may call what.
+
+        Published because the split is a claim worth being able to check: the
+        conversation model is advertised the retrieval tier only and has no tool
+        that assigns an urgency.
+        """
+        return JSONResponse(
+            {
+                "retrieval": services.tools.list_tools(tier=Tier.RETRIEVAL),
+                "decision": services.tools.list_tools(tier=Tier.DECISION),
+                "note": (
+                    "Decision tools are reachable over MCP by a deliberate external "
+                    "client. They are never advertised to the conversation model, so "
+                    "no text a patient types can reach the triage decision."
+                ),
+            }
+        )
 
     @app.get("/api/notifications")
     def notifications() -> JSONResponse:

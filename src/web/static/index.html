@@ -57,6 +57,14 @@
   .reason .src { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
   .typing { color: var(--muted); font-size: 13px; font-style: italic; }
+
+  .transport { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .transport .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .transport input { flex: 1; min-width: 180px; }
+  .ticket { margin-top: 12px; }
+  .ticket dl { display: grid; grid-template-columns: 130px 1fr; gap: 5px 14px; margin: 0; font-size: 13px; }
+  .ticket dt { color: var(--muted); }
+  .ticket dd { margin: 0; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -350,8 +358,102 @@ function renderOutcome(note) {
   }
   body.append(section("Still unknown", list(note.unknown, "unknown-list")));
 
+  if (["HIGH", "CRITICAL"].includes(rec.urgency)) renderTransport(body, rec.urgency);
+
   $("outcome").hidden = false;
   $("outcome").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ---------- emergency transport ---------- */
+
+function renderTransport(body, urgency) {
+  const box = document.createElement("div");
+  box.className = "transport";
+
+  const h = document.createElement("h4");
+  h.textContent = "Emergency transport";
+  h.style.cssText = "margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650";
+
+  const explain = document.createElement("p");
+  explain.className = "small muted";
+  explain.style.margin = "0";
+  explain.textContent =
+    `Your case was graded ${urgency}, so an ambulance can be requested. ` +
+    "Nothing is requested until you confirm. Please give the address you " +
+    "want to be collected from.";
+
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const where = document.createElement("input");
+  where.type = "text";
+  where.placeholder = "Pickup address";
+
+  const go = document.createElement("button");
+  go.className = "primary";
+  go.textContent = "Request ambulance";
+
+  const outcome = document.createElement("div");
+  outcome.className = "ticket";
+
+  go.onclick = async () => {
+    const location = where.value.trim();
+    if (!location) { where.focus(); return; }
+    go.disabled = true;
+    try {
+      const res = await api(`/api/cases/${caseId}/ambulance`, {
+        method: "POST",
+        body: JSON.stringify({ pickup_location: location, confirmed_by: "patient" }),
+      });
+      row.hidden = true;
+      explain.textContent = "";
+      renderTicket(outcome, res.request);
+    } catch (err) {
+      outcome.replaceChildren();
+      const fail = document.createElement("div");
+      fail.className = "banner stop";
+      fail.textContent = `Could not raise the request: ${err.message}. Please tell a member of staff.`;
+      outcome.append(fail);
+      go.disabled = false;
+    }
+  };
+
+  row.append(where, go);
+  box.append(h, explain, row, outcome);
+  body.append(box);
+}
+
+function renderTicket(target, request) {
+  target.replaceChildren();
+
+  const banner = document.createElement("div");
+  banner.className = "banner info";
+  banner.textContent = "Transport requested. Emergency operations have been notified.";
+
+  const dl = document.createElement("dl");
+  for (const [label, value] of [
+    ["Request", request.request_id],
+    ["Case", request.case_id],
+    ["Priority", request.priority],
+    ["Pickup", request.pickup_location],
+    ["Destination", request.destination],
+    ["Status", request.status.replace(/_/g, " ")],
+  ]) {
+    const dt = document.createElement("dt");
+    dt.textContent = label;
+    const dd = document.createElement("dd");
+    dd.textContent = value;
+    dl.append(dt, dd);
+  }
+
+  const caveat = document.createElement("p");
+  caveat.className = "tiny muted";
+  caveat.style.marginBottom = "0";
+  caveat.textContent =
+    "This is a request for dispatch, not a dispatch. A vehicle is allocated by " +
+    "emergency operations. In this demonstration build no real service is contacted.";
+
+  target.append(banner, dl, caveat);
 }
 
 refreshMode();

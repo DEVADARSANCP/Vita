@@ -41,6 +41,19 @@
 
   .setup { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
+  .examples { margin-top: 28px; }
+  .examples h4 {
+    margin: 0 0 10px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); font-weight: 650; text-align: center;
+  }
+  .examples .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+  .example {
+    text-align: left; padding: 11px 13px; line-height: 1.45; font-size: 13.5px;
+    border-radius: 8px; cursor: pointer;
+  }
+  .example b { display: block; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase;
+               color: var(--muted); font-weight: 650; margin-bottom: 4px; }
+
   .outcome { margin-top: 24px; }
   .outcome .headline {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -93,6 +106,11 @@
       </select>
       <button class="primary" id="begin">Begin intake</button>
     </div>
+    <div class="examples">
+      <h4>Or try one of these</h4>
+      <div class="grid" id="examples"></div>
+    </div>
+
     <div id="offline-note" style="margin-top:20px" hidden>
       <div class="banner warn">
         Language understanding is unavailable, so VITA cannot ask follow-up
@@ -205,6 +223,67 @@ async function showRule(ruleId) {
     alert(`Rule ${ruleId} could not be loaded.`);
   }
 }
+
+/* ---------- worked examples ----------
+   Not shortcuts through the system: each one fills the first message and the
+   intake then runs exactly as it would for anything typed by hand. They exist
+   so the hard cases can be reached without retyping them, and so a judge can
+   reproduce what the demonstration shows. */
+
+const EXAMPLES = [
+  {
+    label: "Routine",
+    text: "I've had a fever since yesterday and my whole body aches",
+    lang: "en",
+  },
+  {
+    label: "Time-critical",
+    text: "I have crushing chest pain going down my left arm and I'm sweating",
+    lang: "en",
+  },
+  {
+    label: "Cannot answer",
+    text: "my chest hurts",
+    lang: "en",
+  },
+  {
+    label: "Looks well, is not",
+    text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin for my heart.",
+    lang: "en",
+  },
+  {
+    label: "Outside our scope",
+    text: "my face has gone droopy on one side and my speech is slurred",
+    lang: "en",
+  },
+  {
+    label: "Malayalam",
+    text: "രാവിലെ മുതൽ നെഞ്ചുവേദനയും ശ്വാസംമുട്ടലും ഉണ്ട്",
+    lang: "ml",
+  },
+];
+
+function renderExamples() {
+  const grid = $("examples");
+  for (const example of EXAMPLES) {
+    const button = document.createElement("button");
+    button.className = "example";
+
+    const label = document.createElement("b");
+    label.textContent = example.label;
+    button.append(label, document.createTextNode(example.text));
+
+    button.onclick = async () => {
+      $("language").value = example.lang;
+      await $("begin").onclick();
+      $("input").value = example.text;
+      send();
+    };
+    grid.append(button);
+  }
+}
+
+renderExamples();
 
 /* ---------- session ---------- */
 

@@ -77,10 +77,35 @@ ANCHOR_FACTS = [
     "fever",
 ]
 
+# High-signal facts also requested on the opening turn, before a complaint is
+# settled. Anchors alone are not enough: "I banged my head and I take warfarin"
+# establishes `injury` and nothing else, so IN-03 - head injury on
+# anticoagulants, the presentation most likely to be under-triaged because the
+# patient looks well - can never match. The opening message is the richest one
+# a patient sends and it is worth reading properly.
+OPENING_FACTS = [
+    "head_injury",
+    "loss_of_consciousness",
+    "bleeding_uncontrolled",
+    "pain_radiating",
+    "sweating",
+    "neck_stiffness",
+    "rash_non_blanching",
+    "confusion",
+    "speaking_full_sentences",
+    "lips_blue",
+    "vomiting_blood",
+    "rigid_abdomen",
+]
+
 #: Cap on how many symptoms are requested at once. Beyond this the model starts
 #: answering the list rather than reading the message, and accuracy on the facts
 #: that matter falls.
 MAX_FIELDS_PER_TURN = 12
+
+# Raised for the opening turn only, where the patient is describing their
+# situation rather than answering one question.
+MAX_FIELDS_OPENING = 18
 
 
 class SymptomAgent(ExtractionAgent):
@@ -151,7 +176,9 @@ class SymptomAgent(ExtractionAgent):
 
         relevant: list[str] = []
         if ctx.complaint in (Complaint.UNDETERMINED, Complaint.OUT_OF_SCOPE):
-            relevant = [f for f in ANCHOR_FACTS if f not in wanted]
+            candidates = ANCHOR_FACTS + OPENING_FACTS
+            relevant = [f for f in candidates if f not in wanted]
+            return (wanted + relevant)[:MAX_FIELDS_OPENING]
         else:
             for rule in ctx.kb.rules_for(ctx.complaint):
                 for fact in rule.required_facts:

@@ -390,6 +390,7 @@ class EscalationReason(str, Enum):
     UNRESOLVED_UNKNOWN = "unresolved_unknown"
     CONTRADICTORY_REPORT = "contradictory_report"
     OUT_OF_SCOPE = "out_of_scope"
+    SCOPE_UNCERTAIN = "scope_uncertain"
     DEGRADED_MODE = "degraded_mode"
     RED_FLAG = "red_flag"
     NO_RULE_MATCHED = "no_rule_matched"

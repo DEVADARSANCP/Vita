@@ -364,7 +364,7 @@ def run_scenarios(services: Any, scenarios: list[dict[str, Any]] | None = None, 
     for spec in scenarios:
         started = time.monotonic()
         expect = spec.get("expect", {})
-        case = services.start_case(language=spec.get("language", "en"))
+        case = services.start_case(language=spec.get("language", "en"), synthetic=True)
 
         answers = spec.get("answers", {})
         default = answers.get("*")

@@ -74,8 +74,24 @@ class ScopeVerdict:
     method: str = "exemplars"
 
     @property
-    def should_escalate(self) -> bool:
-        """Escalate when out of scope, and also when the answer is unclear."""
+    def refuses(self) -> bool:
+        """Should VITA decline to triage this at all?
+
+        Only a *confident* negative verdict refuses. An uncertain one must not,
+        and conflating the two was a real defect: a patient writing "I banged my
+        head, I feel alright, but I take warfarin" lands 0.001 from the boundary
+        because the message is about both an injury and a heart medication, and
+        VITA refused to triage a case whose facts had already been extracted
+        correctly and which rule IN-03 covers exactly.
+
+        Refusing and escalating are different actions. Uncertainty warrants the
+        second, never the first.
+        """
+        return not self.in_scope and self.confident
+
+    @property
+    def needs_review(self) -> bool:
+        """Should a human look at this, whatever the rules go on to decide?"""
         return not self.in_scope or not self.confident
 
     def explain(self) -> str:

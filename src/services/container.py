@@ -123,8 +123,8 @@ class VitaServices:
 
     # -- intake ----------------------------------------------------------
 
-    def start_case(self, language: str = "en") -> Case:
-        case = Case(language=language)
+    def start_case(self, language: str = "en", *, synthetic: bool = False) -> Case:
+        case = Case(language=language, synthetic=synthetic)
         self._live[case.case_id] = case
         self.cases.save(case)
         self.cases.audit(case.case_id, "case_opened", detail=f"language={language}")

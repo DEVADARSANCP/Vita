@@ -284,6 +284,7 @@ def decide(
     complaint: Complaint = Complaint.UNDETERMINED,
     contradictions: Iterable[Contradiction] = (),
     degraded: bool = False,
+    scope_uncertain: bool = False,
     final: bool = False,
     floor: Urgency | None = None,
     floor_department: str = "",
@@ -377,6 +378,14 @@ def decide(
         notes.append(
             "The described complaint is outside the five conditions this rule set "
             "covers. VITA has not attempted to triage it."
+        )
+
+    if scope_uncertain:
+        reasons.append(EscalationReason.SCOPE_UNCERTAIN)
+        notes.append(
+            "The description sat close to the boundary between complaints this "
+            "rule set covers and ones it does not. It has been triaged, but a "
+            "clinician should confirm the complaint is the right one."
         )
 
     if degraded:

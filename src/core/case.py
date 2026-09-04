@@ -118,6 +118,18 @@ class Case:
     #: see why VITA declined to triage rather than only that it did.
     scope_verdict: dict[str, Any] = field(default_factory=dict)
 
+    #: Created by the evaluation harness rather than by a patient. Excluded
+    #: from cross-visit recall, because otherwise every eval run leaves fever
+    #: cases behind that make the next run's fever scenario trip GEN-01 - the
+    #: rule working correctly on data that should never have been there.
+    synthetic: bool = False
+
+    #: The description sat near the boundary between covered and uncovered.
+    #: Distinct from out_of_scope: the case is still triaged, because the facts
+    #: may be perfectly clear even when the classification is not, but a human
+    #: sees it either way.
+    scope_uncertain: bool = False
+
     decision: TriageDecision | None = None
     #: The mode the system was in when the decision was produced.
     decided_in_mode: SystemMode = SystemMode.FULL
@@ -249,6 +261,8 @@ class Case:
             "red_flags": self.red_flags,
             "out_of_scope": self.out_of_scope,
             "scope_verdict": self.scope_verdict,
+            "scope_uncertain": self.scope_uncertain,
+            "synthetic": self.synthetic,
             "decided_in_mode": self.decided_in_mode.value,
             "overridden": bool(self.override_urgency),
             "turn_count": self.turn_number,

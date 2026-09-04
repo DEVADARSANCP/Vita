@@ -46,6 +46,10 @@ _ESCALATION_TEXT = {
     EscalationReason.OUT_OF_SCOPE: (
         "The complaint falls outside the five conditions this rule set covers."
     ),
+    EscalationReason.SCOPE_UNCERTAIN: (
+        "The description sat close to the boundary of what this rule set covers. "
+        "It has been triaged, but the complaint itself should be confirmed."
+    ),
     EscalationReason.DEGRADED_MODE: (
         "Language understanding was unavailable, so the facts below were extracted "
         "by keyword fallback and are not conversationally confirmed."

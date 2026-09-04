@@ -423,7 +423,7 @@ class IntakeOrchestrator:
         if verdict.method == "unavailable":
             return
 
-        if verdict.should_escalate:
+        if verdict.refuses:
             logger.info(
                 "case %s out of scope: nearest class %s (margin %.3f)",
                 case.case_id,
@@ -431,6 +431,21 @@ class IntakeOrchestrator:
                 verdict.margin,
             )
             case.out_of_scope = True
+            result.notes.append(verdict.explain())
+            return
+
+        if verdict.needs_review:
+            # Near the boundary. The rules still run - the facts may be perfectly
+            # clear even when the classification is not - but a human sees it.
+            logger.info(
+                "case %s sits near the scope boundary (%s vs %s, margin %.4f); "
+                "triaging normally and flagging for review",
+                case.case_id,
+                verdict.nearest_covered,
+                verdict.nearest_out,
+                verdict.margin,
+            )
+            case.scope_uncertain = True
             result.notes.append(verdict.explain())
 
     def _red_flag_ceiling(self, case: Case) -> Urgency:
@@ -490,6 +505,7 @@ class IntakeOrchestrator:
             complaint=Complaint.OUT_OF_SCOPE if out_of_scope else case.complaint,
             contradictions=case.contradictions,
             degraded=degraded,
+            scope_uncertain=case.scope_uncertain,
             final=True,
             floor=strongest.urgency if strongest else None,
             floor_department=strongest.department if strongest else "",

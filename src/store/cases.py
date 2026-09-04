@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS cases (
     department    TEXT NOT NULL DEFAULT '',
     review        INTEGER NOT NULL DEFAULT 0,
     language      TEXT NOT NULL DEFAULT 'en',
+    synthetic     INTEGER NOT NULL DEFAULT 0,
     document      TEXT NOT NULL
 );
 
@@ -100,14 +101,15 @@ class CaseStore:
             self._conn.execute(
                 """
                 INSERT INTO cases (case_id, created_at, updated_at, status, complaint,
-                                   urgency, urgency_rank, department, review, language, document)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                                   urgency, urgency_rank, department, review, language,
+                                   synthetic, document)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(case_id) DO UPDATE SET
                     updated_at=excluded.updated_at, status=excluded.status,
                     complaint=excluded.complaint, urgency=excluded.urgency,
                     urgency_rank=excluded.urgency_rank, department=excluded.department,
                     review=excluded.review, language=excluded.language,
-                    document=excluded.document
+                    synthetic=excluded.synthetic, document=excluded.document
                 """,
                 (
                     case.case_id,
@@ -120,6 +122,7 @@ class CaseStore:
                     case.decision.department if case.decision else "",
                     int(bool(case.decision and case.decision.requires_human_review)),
                     case.language,
+                    int(case.synthetic),
                     document,
                 ),
             )
@@ -207,7 +210,7 @@ class CaseStore:
             rows = self._conn.execute(
                 """
                 SELECT case_id, created_at, urgency, department FROM cases
-                WHERE complaint = ? AND case_id <> ?
+                WHERE complaint = ? AND case_id <> ? AND synthetic = 0
                 ORDER BY created_at DESC LIMIT 5
                 """,
                 (complaint, exclude),
@@ -276,6 +279,7 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
         )
         for t in (raw.get("turns") or [])
     ]
+    case.synthetic = bool(raw.get("synthetic", False))
     case.pending_fact = raw.get("pending_fact", "")
     case.pending_rule = raw.get("pending_rule", "")
     case.red_flags = list(raw.get("red_flags") or [])

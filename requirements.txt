@@ -1,0 +1,10 @@
+# --- web surface --------------------------------------------------------
+# One process serves the API and both interfaces. No build step, no second
+# command: the submission rules allow exactly one.
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+
+# --- configuration and contracts ---------------------------------------
+pydantic>=2.9
+python-dotenv>=1.0

@@ -1,0 +1,31 @@
+# Secrets — never commit
+.env
+.env.local
+
+# Runtime state. Regenerated on every run; the judge's clone starts clean.
+runtime/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Scratch
+*.log
+_attic/
+
+# NOTE — deliberately NOT ignored, unlike a typical Python project:
+#   data/            the clinical rules, policies and hospital seed data
+#   data/index/      the precomputed embedding index (*.npy)
+# The submission rules require generated data and the prebuilt index to be
+# committed, so a judge's fresh clone has everything it needs to start.

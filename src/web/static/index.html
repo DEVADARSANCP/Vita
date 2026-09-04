@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VITA — Patient Intake &amp; Triage</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --panel: #ffffff; --ink: #16181d; --muted: #6b7280;
+    --line: #e4e7ec; --accent: #1a6fd4;
+    --ok: #1b7f4b; --warn: #a86612; --stop: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 64px 24px; }
+  h1 { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .tag { color: var(--muted); margin: 0 0 40px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 22px;
+  }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .k { color: var(--muted); }
+  .v { font-variant-numeric: tabular-nums; }
+  .mode { font-weight: 600; }
+  .mode.FULL { color: var(--ok); }
+  .mode.DEGRADED { color: var(--warn); }
+  .mode.OFFLINE { color: var(--stop); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>VITA</h1>
+  <p class="tag">Ask. Assess. Route. Escalate.</p>
+
+  <div class="panel">
+    <div class="row"><span class="k">Service</span><span class="v" id="app">—</span></div>
+    <div class="row"><span class="k">Version</span><span class="v" id="version">—</span></div>
+    <div class="row"><span class="k">Mode</span><span class="v mode" id="mode">—</span></div>
+    <div class="row"><span class="k">Gemini key</span><span class="v" id="key">—</span></div>
+  </div>
+
+  <p class="note">
+    Skeleton build. The patient interface and hospital dashboard are not wired
+    up yet — this page confirms the service is running and reports what it can
+    currently do.
+  </p>
+</main>
+
+<script>
+  fetch("/api/health")
+    .then((r) => r.json())
+    .then((d) => {
+      document.getElementById("app").textContent = d.app;
+      document.getElementById("version").textContent = d.version;
+      document.getElementById("key").textContent = d.gemini_key_present ? "present" : "not set";
+      const mode = document.getElementById("mode");
+      mode.textContent = d.mode;
+      mode.classList.add(d.mode);
+    })
+    .catch(() => {
+      document.getElementById("mode").textContent = "unreachable";
+    });
+</script>
+</body>
+</html>

@@ -48,15 +48,21 @@ case. That is deliberate: a triage tool that exits because of a configuration
 problem is indistinguishable, to whoever is trying to run it, from one that does
 not work.
 
-**On speed.** A spoken turn costs one Gemini call, not two: the clip is attached
-to the same request that answers it, so nothing is transcribed and then asked
-about separately. Measured at **3.3 seconds** from clip to reply - faster than
-the same sentence typed, because speech carries more in one turn.
+**On speed.** A spoken turn costs no Gemini call at all for the listening. The
+browser's own speech recognition turns speech into text - about a second, with
+the words appearing as they are said - and that text then travels the identical
+path as anything typed. Sending audio to Gemini was tried and abandoned: it cost
+an extra round trip, and `MediaRecorder` produces webm/opus, which is not a
+format Gemini decodes, so every browser recording failed silently.
+
+`/api/cases/{id}/voice` still accepts an audio clip and transcribes it in the
+same call that answers it, for any client that wants that. It takes the formats
+Gemini actually decodes - wav, mp3, aiff, aac, ogg, flac.
 
 **On rate limits.** An intake costs roughly one Gemini call per patient message.
 A free-tier key allows about five a minute, so VITA treats HTTP 429 as an
 expected condition — it reads the server's own `retryDelay` and waits rather
-than degrading a patient into keyword extraction over a few seconds. On a
+than dropping a patient into the deterministic path over a few seconds. On a
 free-tier key a fast demonstration will still meet pauses. The deterministic
 paths are unaffected.
 
@@ -86,7 +92,7 @@ patient types
  [4] record_facts         only keys the knowledge base defines,
       |                   ranges checked, units converted
       v
- [5] RULE ENGINE          three-valued conditions over 41 rules
+ [5] RULE ENGINE          three-valued conditions over 43 rules
                           THE DECISION. No model reaches this.
       |
       +---> still moving? ask the next question  --> back to [1]
@@ -144,7 +150,7 @@ Never a quiet `LOW`.
 
 Not beside it. When a patient sends a message, the planner reaches every
 capability by calling a tool over an MCP session — `list_tools`, `call_tool`,
-JSON-RPC, the lot. Eighteen flat tools; tools, not agents.
+JSON-RPC, the lot. Nineteen flat tools; tools, not agents.
 
 The transport is unusual and deliberately so. Running the server as a stdio
 subprocess — which `src/mcp_server.py` still does for external clients — would
@@ -218,7 +224,7 @@ Everything is synthetic, authored for this project, and committed.
 
 | Location | What | Count |
 |---|---|---|
-| `data/clinical/rules.json` | Triage rules, each citing the framework it was adapted from | 41 |
+| `data/clinical/rules.json` | Triage rules, each citing the framework it was adapted from | 43 |
 | `data/clinical/questions.json` | The wording used to establish each fact | 40 |
 | `data/clinical/red_flags.json` | Deterministic phrases, in English, Malayalam and Hindi | 14 |
 | `data/clinical/medications.json` | Medication name → class → triage fact | 76 |
@@ -323,7 +329,7 @@ without helping them.
 ### What was deliberately left out
 
 - **A medicine database.** A formulary invites the system towards "here is what you should take", which is prescribing. What has triage value is smaller: names mapped to a class, so "I take warfarin" becomes a rule input.
-- **Live voice.** Multilingual *text* works. Voice was scoped last and not reached; the conversation layer is transport-agnostic so it stays a bolt-on rather than a rewrite.
+- **Server-side speech recognition.** The browser already has it, it is instant, and it returns a string that goes down the ordinary message path. Sending audio to a model to be transcribed cost a round trip and bought nothing.
 - **A vector database.** Twenty-five documents and fifty-five exemplars. An index costs more to build and load than a dot product costs to run, and is one more dependency that can fail on a machine we do not control.
 - **Bed management as a system.** Rooms exist so an admission can be given one. Ward operations are a different product.
 
@@ -341,10 +347,15 @@ who should have stayed, and in the record the two look identical. Averaging them
 into one percentage hides the only failure that hurts anybody.
 
 ```
-Sent home too easily   0
-Got it right           34/34
-Handed to a person     27       ← the system knowing its limits
+Sent home too easily   0        ← the number that matters
+Got it right           33/34
+Graded too high        1        ← wrong, in the safe direction
+Handed to a person     28       ← the system knowing its limits
 ```
+
+The one failure is a minor limb injury with every red flag excluded, graded HIGH
+where it should be LOW. It is reported rather than hidden: a suite that only
+prints its successes is not evidence of anything.
 
 Coverage: incomplete information, contradictory answers, uncooperative patients,
 out-of-scope presentations, prompt injection, degraded mode, cross-language

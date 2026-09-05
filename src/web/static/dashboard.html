@@ -141,11 +141,6 @@
 <div class="topbar">
   <div class="brand">VITA <small>Hospital Dashboard</small></div>
   <div class="spacer"></div>
-  <label class="tiny muted" for="whoami" style="display:flex;align-items:center;gap:6px">
-    Signed in as
-    <input type="text" id="whoami" placeholder="Your name"
-           style="width:150px;padding:4px 8px;font-size:12.5px">
-  </label>
   <span class="tiny muted" id="notify-state"></span>
   <span class="mode" id="mode">…</span>
   <a class="navlink" href="/reasoning">Case reasoning</a>
@@ -250,27 +245,35 @@ function list(items, cls, emptyText) {
    an audit trail full of "Dr. on duty" tells nobody anything. Kept in the
    browser so it survives a reload without needing accounts. */
 const WHO_KEY = "vita.clinician";
+let clinicianName = "";
+try { clinicianName = localStorage.getItem(WHO_KEY) || ""; } catch { /* private browsing */ }
 
-function whoAmI() {
-  return ($("whoami").value || "").trim();
+function setClinicianName(value) {
+  clinicianName = (value || "").trim();
+  try { localStorage.setItem(WHO_KEY, clinicianName); } catch {}
+  // Keep every name box on the page in step - the override row and the
+  // approval buttons are rendered separately and both need the same answer.
+  for (const box of document.querySelectorAll(".whoami")) {
+    if (box.value !== clinicianName) box.value = clinicianName;
+  }
+}
+
+function nameBox(placeholder) {
+  const box = el("input", "whoami");
+  box.type = "text";
+  box.placeholder = placeholder || "Your name";
+  box.value = clinicianName;
+  box.style.minWidth = "140px";
+  box.addEventListener("input", () => setClinicianName(box.value));
+  return box;
 }
 
 function requireName() {
-  const name = whoAmI();
-  if (name) return name;
-  $("whoami").focus();
-  $("whoami").style.borderColor = "var(--critical)";
-  setTimeout(() => { $("whoami").style.borderColor = ""; }, 1600);
-  alert("Please put your name in the top bar first, so this is recorded against you.");
+  if (clinicianName) return clinicianName;
+  const typed = prompt("Your name, so this is recorded against you:", "");
+  if (typed && typed.trim()) { setClinicianName(typed); return clinicianName; }
   return "";
 }
-
-try {
-  $("whoami").value = localStorage.getItem(WHO_KEY) || "";
-} catch { /* private browsing */ }
-$("whoami").addEventListener("change", () => {
-  try { localStorage.setItem(WHO_KEY, whoAmI()); } catch {}
-});
 
 async function refreshStatus() {
   try {
@@ -400,6 +403,7 @@ function requestCard(r) {
   const note = el("input", "note");
   note.type = "text";
   note.placeholder = "Note (optional)";
+  act.append(nameBox("Your name"));
   const yes = el("button", "primary", "Approve");
   const no = el("button", null, "Reject");
 
@@ -628,12 +632,13 @@ async function renderCase(d) {
     await api(`/api/cases/${selected}/review`, { method: "POST", body: JSON.stringify({ by }) });
     cachedNote = null; await refreshQueue(); await renderDetail();
   };
-  actions.append(sel, reason, apply, done);
+  actions.append(sel, reason, nameBox("Your name"), apply, done);
   d.append(section("Clinician action", actions));
   const attributed = el("div", "tiny muted");
   attributed.style.marginTop = "6px";
   attributed.textContent =
-    "Recorded against the name in the top bar, and kept alongside what the system recommended.";
+    "Recorded against your name and kept alongside what the system recommended, "
+    + "so the record shows both.";
   d.append(attributed);
 
   if (kase.override && kase.override.urgency) {

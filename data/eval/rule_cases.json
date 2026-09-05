@@ -7,24 +7,55 @@
       "name": "Chest pain with breathing difficulty",
       "category": "normal",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "breathing_difficulty": "true"},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["CP-01"], "human_review": true}
+      "facts": {
+        "chest_pain": "true",
+        "breathing_difficulty": "true"
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "CP-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-002",
       "name": "Chest pain radiating to the arm",
       "category": "normal",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "pain_radiating": "true", "breathing_difficulty": "false"},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["CP-02"], "human_review": true}
+      "facts": {
+        "chest_pain": "true",
+        "pain_radiating": "true",
+        "breathing_difficulty": "false"
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "CP-02"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-003",
       "name": "Chest pain with syncope is critical",
       "category": "normal",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "fainting": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["CP-04"], "human_review": true}
+      "facts": {
+        "chest_pain": "true",
+        "fainting": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "CP-04"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-004",
@@ -32,30 +63,68 @@
       "category": "normal",
       "complaint": "chest_pain",
       "facts": {
-        "chest_pain": "true", "pain_reproducible_on_pressure": "true",
-        "breathing_difficulty": "false", "pain_radiating": "false", "severity": 2,
-        "sweating": "false", "nausea": "false", "fainting": "false",
-        "known_cardiac_history": "false", "age_years": 24, "onset_hours": 100,
-        "fever": "false", "pain_on_breathing": "false",
-        "prior_visit_72h_same_complaint": "false", "pregnancy": "false"
+        "chest_pain": "true",
+        "pain_reproducible_on_pressure": "true",
+        "breathing_difficulty": "false",
+        "pain_radiating": "false",
+        "severity": 2,
+        "sweating": "false",
+        "nausea": "false",
+        "fainting": "false",
+        "known_cardiac_history": "false",
+        "age_years": 24,
+        "onset_hours": 100,
+        "fever": "false",
+        "pain_on_breathing": "false",
+        "prior_visit_72h_same_complaint": "false",
+        "pregnancy": "false"
       },
-      "expect": {"urgency": "LOW", "department": "General Medicine", "rules_include": ["CP-09"], "human_review": false}
+      "expect": {
+        "urgency": "LOW",
+        "department": "General Medicine",
+        "rules_include": [
+          "CP-09"
+        ],
+        "human_review": false
+      }
     },
     {
       "id": "EV-R-005",
       "name": "Chest pain alone, nothing else established, must not fall to LOW",
       "category": "incomplete",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true"},
-      "expect": {"urgency": "HIGH", "human_review": true, "escalation_includes": ["unresolved_unknown"], "unknowns_include": ["breathing_difficulty"]}
+      "facts": {
+        "chest_pain": "true"
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "human_review": true,
+        "escalation_includes": [
+          "unresolved_unknown"
+        ],
+        "unknowns_include": [
+          "breathing_difficulty"
+        ]
+      }
     },
     {
       "id": "EV-R-006",
       "name": "Chest pain in a 55 year old within the cardiac window",
       "category": "normal",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "age_years": 55, "onset_hours": 3},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["CP-07"], "human_review": true}
+      "facts": {
+        "chest_pain": "true",
+        "age_years": 55,
+        "onset_hours": 3
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "CP-07"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-007",
@@ -63,31 +132,66 @@
       "category": "normal",
       "complaint": "chest_pain",
       "facts": {
-        "chest_pain": "true", "pain_on_breathing": "true", "fever": "true",
-        "breathing_difficulty": "false", "pain_radiating": "false", "fainting": "false",
-        "sweating": "false", "nausea": "false", "severity": 4,
-        "known_cardiac_history": "false", "age_years": 28, "onset_hours": 60,
-        "pain_reproducible_on_pressure": "false", "pregnancy": "false",
+        "chest_pain": "true",
+        "pain_on_breathing": "true",
+        "fever": "true",
+        "breathing_difficulty": "false",
+        "pain_radiating": "false",
+        "fainting": "false",
+        "sweating": "false",
+        "nausea": "false",
+        "severity": 4,
+        "known_cardiac_history": "false",
+        "age_years": 28,
+        "onset_hours": 60,
+        "pain_reproducible_on_pressure": "false",
+        "pregnancy": "false",
         "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "MODERATE", "department": "General Medicine", "rules_include": ["CP-08"], "human_review": false}
+      "expect": {
+        "urgency": "MODERATE",
+        "department": "General Medicine",
+        "rules_include": [
+          "CP-08"
+        ],
+        "human_review": false
+      }
     },
-
     {
       "id": "EV-R-010",
       "name": "Fever with neck stiffness is critical",
       "category": "normal",
       "complaint": "fever",
-      "facts": {"fever": "true", "neck_stiffness": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["FV-01"], "human_review": true}
+      "facts": {
+        "fever": "true",
+        "neck_stiffness": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "FV-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-011",
       "name": "Fever with a non-blanching rash is critical",
       "category": "normal",
       "complaint": "fever",
-      "facts": {"fever": "true", "rash_non_blanching": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["FV-02"], "human_review": true}
+      "facts": {
+        "fever": "true",
+        "rash_non_blanching": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "FV-02"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-012",
@@ -95,28 +199,64 @@
       "category": "normal",
       "complaint": "fever",
       "facts": {
-        "fever": "true", "temperature_c": 38.1, "duration_days": 1,
-        "confusion": "false", "breathing_difficulty": "false", "neck_stiffness": "false",
-        "rash_non_blanching": "false", "immunocompromised": "false",
-        "pregnancy": "false", "age_years": 30, "prior_visit_72h_same_complaint": "false"
+        "fever": "true",
+        "temperature_c": 38.1,
+        "duration_days": 1,
+        "confusion": "false",
+        "breathing_difficulty": "false",
+        "neck_stiffness": "false",
+        "rash_non_blanching": "false",
+        "immunocompromised": "false",
+        "pregnancy": "false",
+        "age_years": 30,
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "LOW", "department": "General Medicine", "rules_include": ["FV-08"], "human_review": false}
+      "expect": {
+        "urgency": "LOW",
+        "department": "General Medicine",
+        "rules_include": [
+          "FV-08"
+        ],
+        "human_review": false
+      }
     },
     {
       "id": "EV-R-013",
       "name": "Fever in an immunocompromised patient who looks well",
       "category": "edge",
       "complaint": "fever",
-      "facts": {"fever": "true", "temperature_c": 38.2, "immunocompromised": "true", "duration_days": 1},
-      "expect": {"urgency": "HIGH", "department": "General Medicine", "rules_include": ["FV-06"], "human_review": true}
+      "facts": {
+        "fever": "true",
+        "temperature_c": 38.2,
+        "immunocompromised": "true",
+        "duration_days": 1
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "General Medicine",
+        "rules_include": [
+          "FV-06"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-014",
       "name": "Hyperpyrexia at 40 degrees",
       "category": "normal",
       "complaint": "fever",
-      "facts": {"fever": "true", "temperature_c": 40.2},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["FV-04"], "human_review": true}
+      "facts": {
+        "fever": "true",
+        "temperature_c": 40.2
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "FV-04"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-015",
@@ -124,37 +264,81 @@
       "category": "normal",
       "complaint": "fever",
       "facts": {
-        "fever": "true", "temperature_c": 38.4, "duration_days": 7,
-        "confusion": "false", "breathing_difficulty": "false", "neck_stiffness": "false",
-        "rash_non_blanching": "false", "immunocompromised": "false", "pregnancy": "false",
-        "age_years": 34, "prior_visit_72h_same_complaint": "false"
+        "fever": "true",
+        "temperature_c": 38.4,
+        "duration_days": 7,
+        "confusion": "false",
+        "breathing_difficulty": "false",
+        "neck_stiffness": "false",
+        "rash_non_blanching": "false",
+        "immunocompromised": "false",
+        "pregnancy": "false",
+        "age_years": 34,
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "MODERATE", "department": "General Medicine", "rules_include": ["FV-07"], "human_review": false}
+      "expect": {
+        "urgency": "MODERATE",
+        "department": "General Medicine",
+        "rules_include": [
+          "FV-07"
+        ],
+        "human_review": false
+      }
     },
-
     {
       "id": "EV-R-020",
       "name": "Cannot speak a full sentence",
       "category": "normal",
       "complaint": "breathing_difficulty",
-      "facts": {"breathing_difficulty": "true", "speaking_full_sentences": "false"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["BR-01"], "human_review": true}
+      "facts": {
+        "breathing_difficulty": "true",
+        "speaking_full_sentences": "false"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "BR-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-021",
       "name": "Cyanosis with breathlessness",
       "category": "normal",
       "complaint": "breathing_difficulty",
-      "facts": {"breathing_difficulty": "true", "lips_blue": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["BR-02"], "human_review": true}
+      "facts": {
+        "breathing_difficulty": "true",
+        "lips_blue": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "BR-02"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-022",
       "name": "Sudden breathlessness with chest pain",
       "category": "normal",
       "complaint": "breathing_difficulty",
-      "facts": {"breathing_difficulty": "true", "sudden_onset": "true", "chest_pain": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["BR-03"], "human_review": true}
+      "facts": {
+        "breathing_difficulty": "true",
+        "sudden_onset": "true",
+        "chest_pain": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "BR-03"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-023",
@@ -162,21 +346,45 @@
       "category": "normal",
       "complaint": "breathing_difficulty",
       "facts": {
-        "breathing_difficulty": "true", "onset_hours": 400, "speaking_full_sentences": "true",
-        "lips_blue": "false", "chest_pain": "false", "fever": "false",
-        "known_asthma": "false", "wheezing": "false", "sudden_onset": "false",
-        "pregnancy": "false", "age_years": 45, "prior_visit_72h_same_complaint": "false"
+        "breathing_difficulty": "true",
+        "onset_hours": 400,
+        "speaking_full_sentences": "true",
+        "lips_blue": "false",
+        "chest_pain": "false",
+        "fever": "false",
+        "known_asthma": "false",
+        "wheezing": "false",
+        "sudden_onset": "false",
+        "pregnancy": "false",
+        "age_years": 45,
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "MODERATE", "department": "Pulmonology", "rules_include": ["BR-06"], "human_review": false}
+      "expect": {
+        "urgency": "MODERATE",
+        "department": "Pulmonology",
+        "rules_include": [
+          "BR-06"
+        ],
+        "human_review": false
+      }
     },
-
     {
       "id": "EV-R-030",
       "name": "Uncontrolled bleeding",
       "category": "normal",
       "complaint": "injury",
-      "facts": {"injury": "true", "bleeding_uncontrolled": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["IN-01"], "human_review": true}
+      "facts": {
+        "injury": "true",
+        "bleeding_uncontrolled": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "IN-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-031",
@@ -184,56 +392,123 @@
       "category": "edge",
       "complaint": "injury",
       "facts": {
-        "injury": "true", "head_injury": "true", "on_anticoagulants": "true",
-        "loss_of_consciousness": "false", "bleeding_uncontrolled": "false"
+        "injury": "true",
+        "head_injury": "true",
+        "on_anticoagulants": "true",
+        "loss_of_consciousness": "false",
+        "bleeding_uncontrolled": "false"
       },
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["IN-03"], "human_review": true}
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "IN-03"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-032",
-      "name": "Minor limb injury with everything excluded",
+      "name": "Minor limb injury with every red flag excluded",
       "category": "normal",
       "complaint": "injury",
       "facts": {
-        "injury": "true", "bleeding_uncontrolled": "false", "head_injury": "false",
-        "deformity_visible": "false", "can_bear_weight": "true",
-        "mechanism_high_energy": "false", "severity": 3, "age_years": 30,
-        "pregnancy": "false", "prior_visit_72h_same_complaint": "false"
+        "injury": "true",
+        "bleeding_uncontrolled": "false",
+        "head_injury": "false",
+        "deformity_visible": "false",
+        "can_bear_weight": "true",
+        "mechanism_high_energy": "false",
+        "severity": 3,
+        "age_years": 30,
+        "pregnancy": "false",
+        "prior_visit_72h_same_complaint": "false",
+        "foreign_object_embedded": "false",
+        "amputation_or_degloving": "false"
       },
-      "expect": {"urgency": "LOW", "department": "Orthopaedics", "rules_include": ["IN-07"], "human_review": false}
+      "expect": {
+        "urgency": "LOW",
+        "department": "Orthopaedics",
+        "rules_include": [
+          "IN-07"
+        ],
+        "human_review": false
+      }
     },
     {
       "id": "EV-R-033",
       "name": "High-energy mechanism with no visible injury",
       "category": "edge",
       "complaint": "injury",
-      "facts": {"injury": "true", "mechanism_high_energy": "true", "bleeding_uncontrolled": "false", "deformity_visible": "false"},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["IN-04"], "human_review": true}
+      "facts": {
+        "injury": "true",
+        "mechanism_high_energy": "true",
+        "bleeding_uncontrolled": "false",
+        "deformity_visible": "false"
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "IN-04"
+        ],
+        "human_review": true
+      }
     },
-
     {
       "id": "EV-R-040",
       "name": "Rigid abdomen",
       "category": "normal",
       "complaint": "abdominal_pain",
-      "facts": {"abdominal_pain": "true", "rigid_abdomen": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["AB-01"], "human_review": true}
+      "facts": {
+        "abdominal_pain": "true",
+        "rigid_abdomen": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "AB-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-041",
       "name": "Haematemesis",
       "category": "normal",
       "complaint": "abdominal_pain",
-      "facts": {"abdominal_pain": "true", "vomiting_blood": "true"},
-      "expect": {"urgency": "CRITICAL", "department": "Emergency", "rules_include": ["AB-02"], "human_review": true}
+      "facts": {
+        "abdominal_pain": "true",
+        "vomiting_blood": "true"
+      },
+      "expect": {
+        "urgency": "CRITICAL",
+        "department": "Emergency",
+        "rules_include": [
+          "AB-02"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-042",
       "name": "Abdominal pain in pregnancy",
       "category": "edge",
       "complaint": "abdominal_pain",
-      "facts": {"abdominal_pain": "true", "pregnancy": "true", "severity": 4},
-      "expect": {"urgency": "HIGH", "department": "Emergency", "rules_include": ["AB-04"], "human_review": true}
+      "facts": {
+        "abdominal_pain": "true",
+        "pregnancy": "true",
+        "severity": 4
+      },
+      "expect": {
+        "urgency": "HIGH",
+        "department": "Emergency",
+        "rules_include": [
+          "AB-04"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-043",
@@ -241,28 +516,56 @@
       "category": "normal",
       "complaint": "abdominal_pain",
       "facts": {
-        "abdominal_pain": "true", "severity": 2, "vomiting_blood": "false",
-        "black_stool": "false", "rigid_abdomen": "false", "pregnancy": "false",
-        "fever": "false", "sudden_severe_onset": "false", "testicular_pain": "false",
-        "age_years": 27, "prior_visit_72h_same_complaint": "false"
+        "abdominal_pain": "true",
+        "severity": 2,
+        "vomiting_blood": "false",
+        "black_stool": "false",
+        "rigid_abdomen": "false",
+        "pregnancy": "false",
+        "fever": "false",
+        "sudden_severe_onset": "false",
+        "testicular_pain": "false",
+        "age_years": 27,
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "LOW", "department": "General Medicine", "rules_include": ["AB-08"], "human_review": false}
+      "expect": {
+        "urgency": "LOW",
+        "department": "General Medicine",
+        "rules_include": [
+          "AB-08"
+        ],
+        "human_review": false
+      }
     },
-
     {
       "id": "EV-R-050",
       "name": "Return within 72 hours lifts an otherwise mild case",
       "category": "memory",
       "complaint": "chest_pain",
       "facts": {
-        "chest_pain": "true", "pain_reproducible_on_pressure": "true",
-        "breathing_difficulty": "false", "pain_radiating": "false", "severity": 2,
-        "sweating": "false", "nausea": "false", "fainting": "false",
-        "known_cardiac_history": "false", "age_years": 24, "onset_hours": 100,
-        "fever": "false", "pain_on_breathing": "false", "pregnancy": "false",
+        "chest_pain": "true",
+        "pain_reproducible_on_pressure": "true",
+        "breathing_difficulty": "false",
+        "pain_radiating": "false",
+        "severity": 2,
+        "sweating": "false",
+        "nausea": "false",
+        "fainting": "false",
+        "known_cardiac_history": "false",
+        "age_years": 24,
+        "onset_hours": 100,
+        "fever": "false",
+        "pain_on_breathing": "false",
+        "pregnancy": "false",
         "prior_visit_72h_same_complaint": "true"
       },
-      "expect": {"urgency": "MODERATE", "rules_include": ["GEN-01"], "human_review": true}
+      "expect": {
+        "urgency": "MODERATE",
+        "rules_include": [
+          "GEN-01"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-051",
@@ -270,21 +573,49 @@
       "category": "edge",
       "complaint": "abdominal_pain",
       "facts": {
-        "abdominal_pain": "true", "age_years": 81, "severity": 6,
-        "vomiting_blood": "false", "black_stool": "false", "rigid_abdomen": "false",
-        "pregnancy": "false", "fever": "false", "sudden_severe_onset": "false",
-        "testicular_pain": "false", "prior_visit_72h_same_complaint": "false"
+        "abdominal_pain": "true",
+        "age_years": 81,
+        "severity": 6,
+        "vomiting_blood": "false",
+        "black_stool": "false",
+        "rigid_abdomen": "false",
+        "pregnancy": "false",
+        "fever": "false",
+        "sudden_severe_onset": "false",
+        "testicular_pain": "false",
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "MODERATE", "rules_include": ["GEN-02"], "human_review": true}
+      "expect": {
+        "urgency": "MODERATE",
+        "rules_include": [
+          "GEN-02"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-052",
       "name": "Conflicting answers escalate without being resolved",
       "category": "contradiction",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "breathing_difficulty": "true"},
-      "contradictions": [{"key": "breathing_difficulty", "earlier": "false", "later": "true"}],
-      "expect": {"urgency": "HIGH", "human_review": true, "escalation_includes": ["contradictory_report"]}
+      "facts": {
+        "chest_pain": "true",
+        "breathing_difficulty": "true"
+      },
+      "contradictions": [
+        {
+          "key": "breathing_difficulty",
+          "earlier": "false",
+          "later": "true"
+        }
+      ],
+      "expect": {
+        "urgency": "HIGH",
+        "human_review": true,
+        "escalation_includes": [
+          "contradictory_report"
+        ]
+      }
     },
     {
       "id": "EV-R-053",
@@ -293,20 +624,38 @@
       "complaint": "fever",
       "degraded": true,
       "facts": {
-        "fever": "true", "temperature_c": 38.1, "duration_days": 1,
-        "confusion": "false", "breathing_difficulty": "false", "neck_stiffness": "false",
-        "rash_non_blanching": "false", "immunocompromised": "false",
-        "pregnancy": "false", "age_years": 30, "prior_visit_72h_same_complaint": "false"
+        "fever": "true",
+        "temperature_c": 38.1,
+        "duration_days": 1,
+        "confusion": "false",
+        "breathing_difficulty": "false",
+        "neck_stiffness": "false",
+        "rash_non_blanching": "false",
+        "immunocompromised": "false",
+        "pregnancy": "false",
+        "age_years": 30,
+        "prior_visit_72h_same_complaint": "false"
       },
-      "expect": {"urgency": "LOW", "human_review": true, "escalation_includes": ["degraded_mode"]}
+      "expect": {
+        "urgency": "LOW",
+        "human_review": true,
+        "escalation_includes": [
+          "degraded_mode"
+        ]
+      }
     },
     {
       "id": "EV-R-054",
       "name": "Nothing established at all escalates rather than defaulting low",
       "category": "incomplete",
       "complaint": "abdominal_pain",
-      "facts": {"abdominal_pain": "true"},
-      "expect": {"human_review": true, "urgency_at_least": "MODERATE"}
+      "facts": {
+        "abdominal_pain": "true"
+      },
+      "expect": {
+        "human_review": true,
+        "urgency_at_least": "MODERATE"
+      }
     },
     {
       "id": "EV-R-055",
@@ -314,23 +663,48 @@
       "category": "out_of_scope",
       "complaint": "out_of_scope",
       "facts": {},
-      "expect": {"human_review": true, "escalation_includes": ["out_of_scope"], "rules_empty": true}
+      "expect": {
+        "human_review": true,
+        "escalation_includes": [
+          "out_of_scope"
+        ],
+        "rules_empty": true
+      }
     },
     {
       "id": "EV-R-056",
       "name": "Unknown severity does not satisfy a severity threshold",
       "category": "under_triage_guard",
       "complaint": "chest_pain",
-      "facts": {"chest_pain": "true", "severity": "unknown", "breathing_difficulty": "false", "pain_radiating": "false"},
-      "expect": {"rules_exclude": ["CP-05"], "human_review": true}
+      "facts": {
+        "chest_pain": "true",
+        "severity": "unknown",
+        "breathing_difficulty": "false",
+        "pain_radiating": "false"
+      },
+      "expect": {
+        "rules_exclude": [
+          "CP-05"
+        ],
+        "human_review": true
+      }
     },
     {
       "id": "EV-R-057",
       "name": "A denied symptom does not match the rule requiring it",
       "category": "under_triage_guard",
       "complaint": "fever",
-      "facts": {"fever": "true", "neck_stiffness": "false", "rash_non_blanching": "false"},
-      "expect": {"rules_exclude": ["FV-01", "FV-02"]}
+      "facts": {
+        "fever": "true",
+        "neck_stiffness": "false",
+        "rash_non_blanching": "false"
+      },
+      "expect": {
+        "rules_exclude": [
+          "FV-01",
+          "FV-02"
+        ]
+      }
     },
     {
       "id": "EV-R-058",
@@ -338,8 +712,18 @@
       "category": "under_triage_guard",
       "complaint": "fever",
       "note": "Asserts only what it is about. An earlier version also demanded urgency at most MODERATE and failed, because with breathing difficulty unestablished FV-05 stays potential and correctly raises the floor. That was the fixture overreaching, not the engine misbehaving - a case that pins outcomes it is not testing fails for reasons it never meant to check.",
-      "facts": {"fever": "true", "temperature_c": 38.9, "duration_days": 2},
-      "expect": {"rules_exclude": ["FV-04", "FV-07", "FV-08"]}
+      "facts": {
+        "fever": "true",
+        "temperature_c": 38.9,
+        "duration_days": 2
+      },
+      "expect": {
+        "rules_exclude": [
+          "FV-04",
+          "FV-07",
+          "FV-08"
+        ]
+      }
     }
   ]
 }

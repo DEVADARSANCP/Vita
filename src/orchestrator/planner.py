@@ -48,6 +48,7 @@ from ..core.rules import decide, infer_complaint
 from ..core.schema import Complaint, EscalationReason, Fact, FactSource, Tri, Urgency
 from ..llm.gemini import GeminiClient
 from ..mcp_bridge import McpBridge
+from ..tools import MAX_ASKS_PER_FACT
 
 logger = logging.getLogger(__name__)
 
@@ -490,11 +491,17 @@ class TriagePlanner:
                         NO_IMPRESSION_NUDGE
                     )
                     continue
+                held = self._hold_before_closing(case, turn)
+                if held is not None:
+                    return held
                 return self._conclude(case, turn, impression=impression)
 
             # The conversation is only allowed to continue if it is still
             # getting somewhere, or has not yet had a fair chance to.
             if self._converged(case, turn) or case.turn_number >= MAX_TURNS:
+                held = self._hold_before_closing(case, turn)
+                if held is not None:
+                    return held
                 return self._conclude(case, turn, impression=impression)
 
             asking_about = str(data.get("asking_about", "")).strip()
@@ -508,6 +515,124 @@ class TriagePlanner:
             return turn
 
         return self._conclude(case, turn, impression="")
+
+    def _hold_before_closing(self, case: Case, turn: PlannerTurn) -> PlannerTurn | None:
+        """Refuse a premature close, and say what is still worth asking.
+
+        The planner decides when it has heard enough, and it can be wrong about
+        that in a way the rules can see. Measured on a real intake: it concluded
+        a mild fever on the third turn with FV-06 never asked, so the escalation
+        floor lifted a case that should have been LOW to HIGH on an unknown
+        nobody had tried to resolve. One question would have settled it.
+
+        So a close is held under two conditions, in order.
+
+        **A high-urgency rule is open and answerable.** The floor exists to stop
+        an unresolved possibility being assumed away - it is not meant to be the
+        normal way a case ends. If a question could still close that rule, and
+        there are turns left to ask it in, it gets asked. The wording comes from
+        `questions.json`, so it is reviewable text tied to the rule that wants
+        it, not an improvisation.
+
+        **The patient has not had a last word.** "The rules have stopped moving"
+        is not "the patient has finished telling me things", so a case about to
+        close is asked whether there is anything else and closes on the answer.
+
+        Both are emitted here rather than requested from the planner. This used
+        to be a line of guidance in the prompt, which meant it happened only if
+        the model chose to comply - and `conclude` returns before the
+        convergence check that recorded it ever ran. A guarantee that depends on
+        the model honouring it is not a guarantee.
+
+        Nobody is held when the destination is already settled: a matched
+        high-urgency rule or a red flag means the patient is walking through to
+        Emergency now, and another question only delays them. MAX_TURNS still
+        ends every conversation, and no fact is asked about more than
+        `MAX_ASKS_PER_FACT` times.
+
+        Returns a turn carrying the question, or None if the case may close.
+        """
+        if case.turn_number >= MAX_TURNS:
+            return None
+
+        decision = decide(
+            self.kb.rules_for(case.complaint),
+            case.facts,
+            complaint=case.complaint,
+            contradictions=case.contradictions,
+            final=True,
+        )
+
+        # Established urgency - a rule that actually matched, or a phrase the
+        # red-flag pass recognised - means go now.
+        if self._red_flag_ceiling(case).rank >= Urgency.HIGH.rank:
+            return None
+        if decision.cited_rules and decision.urgency.rank >= Urgency.HIGH.rank:
+            return None
+
+        question = self._blocking_question(case, decision)
+        if question is not None:
+            fact, text = question
+            case.asked_counts[fact] = case.asked_counts.get(fact, 0) + 1
+            case.add_vita_turn(text, asked_about=fact)
+            turn.reply = text
+            turn.asking_about = fact
+            turn.notes.append(f"held the close: {fact} still blocks a high-urgency rule")
+            self._trace(case, patient_said="", turn=turn, reply=text, concluded=False)
+            logger.info("case %s: holding close to ask about %s", case.case_id, fact)
+            return turn
+
+        if case.asked_anything_else:
+            return None
+
+        case.asked_anything_else = True
+        reply = (
+            self.phraser.say("anything_else", case.language)
+            if self.phraser is not None
+            else "I have enough to complete your initial triage. Before I do - is "
+                 "there anything else about how you are feeling that you think I "
+                 "should know?"
+        )
+        case.add_vita_turn(reply)
+        turn.reply = reply
+        turn.notes.append("invited the patient to add anything else before closing")
+        self._trace(case, patient_said="", turn=turn, reply=reply, concluded=False)
+        logger.info("case %s: invited a last word before closing", case.case_id)
+        return turn
+
+    def _blocking_question(
+        self, case: Case, decision: Any
+    ) -> tuple[str, str] | None:
+        """The fact blocking the strongest open high-urgency rule, and how to ask.
+
+        Only high-urgency rules qualify. A LOW rule left open costs a citation;
+        a HIGH one left open is what raises the floor, and that is the thing
+        worth one more question.
+        """
+        candidates = [
+            e for e in decision.potential
+            if e.rule.urgency.rank >= Urgency.HIGH.rank and e.satisfied and e.blocking
+        ]
+        if not candidates:
+            return None
+        candidates.sort(key=lambda e: (-e.rule.urgency.rank, len(e.blocking)))
+
+        for evaluation in candidates:
+            for condition in evaluation.blocking:
+                fact = condition.fact
+                if case.asked_counts.get(fact, 0) >= MAX_ASKS_PER_FACT:
+                    continue
+                question = self.kb.question(fact)
+                if question is None:
+                    continue
+                text = (
+                    self.phraser.question(question, case.language)
+                    if self.phraser is not None
+                    else question.text
+                )
+                if text:
+                    return fact, text
+        return None
 
     @staticmethod
     def _handed_over(case: Case) -> bool:
@@ -674,11 +799,14 @@ class TriagePlanner:
 
         guidance = ""
         if asked >= MIN_QUESTIONS and self._is_stable(case):
+            # Deliberately no longer asks the model to put the "anything else"
+            # question. That is now emitted directly when a case is about to
+            # close, so it happens whether or not the model would have complied.
+            # Leaving the instruction here as well produced it twice.
             guidance = (
                 "\nThe triage picture has stopped changing over the last few answers. "
-                "Unless you have a specific reason to ask something else, ask the "
-                "patient whether there is anything else they want to tell you, and "
-                "conclude on their answer."
+                "Further questions are not affecting where this patient goes, so "
+                "conclude unless you have a specific reason to ask something else."
             )
 
         # A spoken turn arrives with the clip attached and no words yet.
@@ -958,19 +1086,23 @@ class TriagePlanner:
         case.state_history.append(self._current_fingerprint(case))
         if case.turn_number < MIN_QUESTIONS:
             return False
-        stable = self._is_stable(case)
-        if stable and case.asked_anything_else:
-            turn.converged = True
-            logger.info(
-                "case %s converged after %d questions: %s",
-                case.case_id, case.turn_number, case.state_history[-1],
-            )
-            return True
-        if stable:
-            # Stable, but the patient has not yet been invited to add anything.
-            # The planner is told to ask; this only marks that it happened.
-            case.asked_anything_else = True
-        return False
+        if not self._is_stable(case):
+            return False
+
+        # Convergence is now purely "the outcome has stopped moving". Whether
+        # the patient has had their last word is a separate gate, applied by
+        # _hold_before_closing at the point of closing.
+        #
+        # This used to set asked_anything_else here, on the theory that the
+        # prompt would tell the planner to ask. That marked the question as
+        # asked without anything having asked it, so a case could close having
+        # invited nobody to say anything.
+        turn.converged = True
+        logger.info(
+            "case %s converged after %d questions: %s",
+            case.case_id, case.turn_number, case.state_history[-1],
+        )
+        return True
 
     # -- closing ---------------------------------------------------------
 

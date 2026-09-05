@@ -8,9 +8,16 @@
 <style>
   .wrap { max-width: 660px; margin: 0 auto; padding: 22px 20px 48px; }
 
-  .intro { text-align: center; padding: 26px 0 22px; }
-  .intro h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .intro p { color: var(--muted); margin: 0; }
+  .page-head { padding-top: 52px; }
+
+  /* Staff screens, kept away from the patient's eyeline. */
+  .staff-exit {
+    margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line);
+    display: flex; justify-content: center; gap: 9px; align-items: center;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .staff-exit a { color: var(--muted); text-decoration: none; }
+  .staff-exit a:hover { color: var(--accent); text-decoration: underline; }
 
   .form { display: grid; gap: 13px; }
   .field label {
@@ -122,21 +129,15 @@
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand">VITA <small>Patient Intake</small></div>
-  <div class="spacer"></div>
-  <span class="mode" id="mode">…</span>
-  <a class="navlink" href="/dashboard">Hospital view →</a>
-</div>
-
 <div class="wrap">
 
   <!-- 1. registration -->
   <div id="register">
-    <div class="intro">
-      <h1>Welcome</h1>
+    <div class="page-head">
+      <h1>Welcome to VITA</h1>
       <p>A few details first, then we will ask what brought you in.</p>
     </div>
+    <div id="alert-host"></div>
 
     <div class="panel" style="padding:18px">
       <div class="form">
@@ -217,13 +218,7 @@
       <h4>Or try a ready-made patient</h4>
       <div class="grid" id="examples"></div>
     </div>
-
-    <div id="offline-note" style="margin-top:18px" hidden>
-      <div class="banner warn">
-        Our assistant is offline at the moment. You can still register, and a
-        member of staff will speak to you directly.
-      </div>
-    </div>
+  </div>
   </div>
 
   <!-- 2. the conversation, which never closes -->
@@ -273,6 +268,14 @@
     </p>
   </div>
 
+  <footer class="staff-exit">
+    <a href="/dashboard">Hospital dashboard</a>
+    <span>·</span>
+    <a href="/reasoning">Case reasoning</a>
+    <span>·</span>
+    <a href="/evaluation">Self-check</a>
+  </footer>
+
 </div>
 
 <script>
@@ -290,13 +293,22 @@ async function api(path, options) {
 }
 const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
+/* Nothing is shown while everything works. A badge that permanently says
+   "online" is a thing to read on every screen forever, and it says nothing. */
 async function refreshMode() {
+  const host = $("alert-host");
+  if (!host) return;
   try {
     const h = await api("/api/health");
-    $("mode").textContent = h.mode === "FULL" ? "online" : h.mode.toLowerCase();
-    $("mode").className = `mode ${h.mode}`;
-    $("offline-note").hidden = h.mode === "FULL";
-  } catch { $("mode").textContent = "unreachable"; }
+    host.replaceChildren();
+    if (h.mode !== "FULL") {
+      const bar = el("div", h.mode === "OFFLINE" ? "alert-bar stop" : "alert-bar");
+      bar.textContent = h.mode === "OFFLINE"
+        ? "Our assistant is offline. You can still register, and a member of staff will speak to you directly."
+        : "Our assistant is having trouble. Everything still works, but a member of staff will review your details.";
+      host.append(bar);
+    }
+  } catch { /* the form works regardless */ }
 }
 
 /* The medication questions only appear for the people they apply to. Asking
@@ -458,9 +470,6 @@ async function send() {
       method: "POST",
       body: JSON.stringify({ text }),
     });
-    $("mode").textContent = turn.mode === "FULL" ? "online" : turn.mode.toLowerCase();
-    $("mode").className = `mode ${turn.mode}`;
-
     if (turn.reply) bubble("vita", turn.reply);
     if (turn.note) { lastNote = turn.note; renderStatus(turn.note); }
   } catch (err) {
@@ -624,7 +633,6 @@ $("ask-human").onclick = async () => {
 };
 
 /* ---------- medicine photo ---------- */
-$("photo-btn").onclick = () => $("photo-input") ? $("photo-input").click() : null;
 const fileInput = el("input");
 fileInput.type = "file";
 fileInput.accept = "image/*";
@@ -632,6 +640,7 @@ fileInput.capture = "environment";
 fileInput.id = "photo-input";
 fileInput.hidden = true;
 document.body.append(fileInput);
+$("photo-btn").onclick = () => fileInput.click();
 
 fileInput.onchange = async (event) => {
   const file = event.target.files && event.target.files[0];

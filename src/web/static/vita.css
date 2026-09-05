@@ -12,16 +12,16 @@
 :root {
   color-scheme: light dark;
 
-  --bg: #f6f7f9;
+  --bg: #f7f6f4;
   --panel: #ffffff;
-  --panel-2: #fbfcfd;
-  --ink: #14171c;
-  --ink-2: #4a5260;
-  --muted: #737d8c;
-  --line: #e2e6ec;
-  --line-2: #eef1f5;
-  --accent: #1a6fd4;
-  --accent-soft: #e8f1fc;
+  --panel-2: #faf9f7;
+  --ink: #1a1917;
+  --ink-2: #55524d;
+  --muted: #85817a;
+  --line: #e6e3dd;
+  --line-2: #f0eeea;
+  --accent: #1f6f5c;
+  --accent-soft: #e6f1ed;
 
   --low: #1b7f4b;
   --low-bg: #e7f5ed;
@@ -32,22 +32,23 @@
   --critical: #b3261e;
   --critical-bg: #fce9e7;
 
-  --radius: 11px;
-  --shadow: 0 1px 2px rgba(20, 23, 28, 0.06), 0 4px 12px rgba(20, 23, 28, 0.04);
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(26, 25, 23, 0.04), 0 2px 8px rgba(26, 25, 23, 0.04);
+  --shadow-lift: 0 1px 2px rgba(26, 25, 23, 0.05), 0 8px 28px rgba(26, 25, 23, 0.07);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1216;
-    --panel: #171b21;
-    --panel-2: #1c2128;
-    --ink: #e8ecf1;
-    --ink-2: #b3bcc8;
-    --muted: #8a94a2;
-    --line: #262c34;
-    --line-2: #20252c;
-    --accent: #62a5f0;
-    --accent-soft: #16273c;
+    --bg: #14161a;
+    --panel: #1b1e23;
+    --panel-2: #21252b;
+    --ink: #eceae6;
+    --ink-2: #b8b4ad;
+    --muted: #8b877f;
+    --line: #2b2f36;
+    --line-2: #24282e;
+    --accent: #6bbfa5;
+    --accent-soft: #17302a;
 
     --low: #5fc48d;
     --low-bg: #12251a;
@@ -58,7 +59,8 @@
     --critical: #f2726a;
     --critical-bg: #331615;
 
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.3);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(0, 0, 0, 0.25);
+    --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 32px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -73,66 +75,59 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+/* One place the page title is set, so every screen agrees on it. */
+.page-head { text-align: center; padding: 40px 20px 26px; }
+.page-head h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 640;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.page-head p {
+  margin: 10px auto 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+.page-head nav {
+  display: flex; justify-content: center; gap: 4px;
+  margin-top: 18px; flex-wrap: wrap;
+}
+.page-head nav a {
+  color: var(--ink-2); text-decoration: none; font-size: 13.5px;
+  padding: 6px 13px; border-radius: 999px; transition: background 0.12s ease, color 0.12s ease;
+}
+.page-head nav a:hover { background: var(--line-2); color: var(--ink); }
+.page-head nav a[aria-current] { background: var(--accent); color: #fff; }
+
+/* Only shown when something is actually wrong. A green badge saying everything
+ * is fine is a thing to read on every screen forever, and it says nothing. */
+.alert-bar {
+  max-width: 720px; margin: 0 auto 18px; padding: 11px 16px;
+  border-radius: 10px; font-size: 13.5px; text-align: center;
+  border: 1px solid var(--moderate); background: var(--moderate-bg); color: var(--moderate);
+}
+.alert-bar.stop { border-color: var(--critical); background: var(--critical-bg); color: var(--critical); }
 
 a { color: var(--accent); }
 
 /* ---------- chrome ---------- */
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.brand {
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  font-size: 17px;
-}
-
-.brand small {
-  display: block;
-  font-weight: 400;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.topbar .spacer { flex: 1; }
-
 .navlink {
   color: var(--ink-2);
   text-decoration: none;
-  font-size: 13px;
-  padding: 6px 10px;
-  border-radius: 6px;
-}
-.navlink:hover { background: var(--line-2); }
-
-/* ---------- mode pill ---------- */
-
-.mode {
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  padding: 4px 9px;
+  font-size: 13.5px;
+  padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid transparent;
-  white-space: nowrap;
 }
-.mode.FULL     { color: var(--low);      background: var(--low-bg);      border-color: var(--low); }
-.mode.DEGRADED { color: var(--moderate); background: var(--moderate-bg); border-color: var(--moderate); }
-.mode.OFFLINE  { color: var(--critical); background: var(--critical-bg); border-color: var(--critical); }
+.navlink:hover { background: var(--line-2); color: var(--ink); }
 
 /* ---------- urgency ---------- */
 
@@ -141,8 +136,8 @@ a { color: var(--accent); }
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  padding: 3px 8px;
-  border-radius: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 .urgency.LOW      { color: var(--low);      background: var(--low-bg); }
@@ -160,17 +155,17 @@ a { color: var(--accent); }
 }
 
 .panel-head {
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--line);
   font-weight: 620;
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  letter-spacing: -0.005em;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.panel-body { padding: 16px; }
+.panel-body { padding: 18px; }
 
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
@@ -201,6 +196,7 @@ button.primary {
   border-color: var(--accent);
   color: #fff;
   font-weight: 560;
+  box-shadow: 0 1px 2px rgba(26, 25, 23, 0.08);
 }
 button.primary:hover:not(:disabled) { filter: brightness(1.08); }
 

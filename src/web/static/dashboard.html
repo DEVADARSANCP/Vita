@@ -142,15 +142,17 @@
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand">VITA <small>Hospital Dashboard</small></div>
-  <div class="spacer"></div>
-  <span class="tiny muted" id="notify-state"></span>
-  <span class="mode" id="mode">…</span>
-  <a class="navlink" href="/reasoning">Case reasoning</a>
-  <a class="navlink" href="/evaluation">Self-check</a>
-  <a class="navlink" href="/">← Patient view</a>
+<div class="page-head">
+  <h1>Hospital Dashboard</h1>
+  <nav>
+    <a href="/">Patient intake</a>
+    <a href="/dashboard" aria-current="page">Hospital dashboard</a>
+    <a href="/reasoning">Case reasoning</a>
+    <a href="/evaluation">Self-check</a>
+  </nav>
 </div>
+
+<div id="alert-host" style="padding:0 20px"></div>
 
 <div class="layout">
 
@@ -279,13 +281,21 @@ function requireName() {
   return "";
 }
 
+/* Silent while everything works. Only a degraded or offline assistant is
+   worth a line across the top of somebody's shift. */
 async function refreshStatus() {
+  const host = $("alert-host");
   try {
     const h = await api("/api/health");
-    $("mode").textContent = h.mode;
-    $("mode").className = `mode ${h.mode}`;
-    $("notify-state").textContent = h.notify_enabled ? "email: live" : "email: dry run";
-  } catch { $("mode").textContent = "unreachable"; }
+    host.replaceChildren();
+    if (h.mode !== "FULL") {
+      const bar = el("div", h.mode === "OFFLINE" ? "alert-bar stop" : "alert-bar");
+      bar.textContent = h.mode === "OFFLINE"
+        ? "The assistant is offline. Red flags and the triage rules still run, and every case is being sent for review."
+        : "The assistant is degraded. Cases are still graded by the rules, and every one is being sent for review.";
+      host.append(bar);
+    }
+  } catch { /* the queue is what matters */ }
 }
 
 async function refreshQueue() {

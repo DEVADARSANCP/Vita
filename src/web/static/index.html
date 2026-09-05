@@ -12,16 +12,27 @@
   .intro h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
   .intro p { color: var(--muted); margin: 0; }
 
-  .form { display: grid; gap: 14px; }
-  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
+  .form { display: grid; gap: 15px; }
+  .field label {
+    display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    margin-bottom: 6px; letter-spacing: 0.01em;
+  }
   .field label .opt { font-weight: 400; color: var(--muted); }
+
+  /* One height for every control in the form, so a row of them lines up
+     whatever type each field happens to be. */
   .field input, .field select, .field textarea { width: 100%; }
-  .field textarea { resize: vertical; min-height: 62px; }
+  .field input, .field select { height: 42px; }
+  .field textarea { resize: vertical; min-height: 74px; padding-top: 10px; }
+
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+
   .choice { display: flex; gap: 8px; }
-  .choice button { flex: 1; padding: 9px; font-size: 14px; }
+  .choice button { flex: 1; height: 42px; padding: 0 10px; font-size: 14px; }
   .choice button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  #begin { height: 46px; font-size: 15px; margin-top: 3px; }
 
   .chat {
     display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0;
@@ -42,7 +53,10 @@
   .msg.patient .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
 
   .composer { display: flex; gap: 8px; align-items: flex-end; }
-  .composer textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; }
+  .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 140px; padding-top: 12px; }
+  .composer button { height: 46px; }
+  #mic-btn, #photo-btn { width: 46px; padding: 0; font-size: 17px; line-height: 1; }
+  #send { padding: 0 20px; }
   .typing { color: var(--muted); font-size: 13px; font-style: italic; margin-top: 8px; }
 
   #mic-btn.recording {
@@ -146,7 +160,7 @@
           </select>
         </div>
 
-        <button class="primary" id="begin" style="padding:11px">Continue</button>
+        <button class="primary" id="begin">Continue</button>
       </div>
     </div>
 

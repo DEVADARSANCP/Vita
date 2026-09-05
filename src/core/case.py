@@ -289,6 +289,19 @@ class Case:
         """Should the existing fact be kept in preference to the new one?"""
         if existing.source is FactSource.RED_FLAG_MATCH and incoming.source is not FactSource.RED_FLAG_MATCH:
             return True
+        # A drug named on the registration form is not displaced by an answer
+        # given in conversation. Somebody who wrote "Warfarin" on the form and
+        # then said no to "any blood-thinning medicine?" has not stopped taking
+        # warfarin - they have not recognised the category, which is ordinary
+        # and common. Letting the second answer win would delete the fact that
+        # makes IN-03 apply to them. The disagreement is still recorded as a
+        # contradiction, so the clinician sees both halves of it.
+        if existing.source is FactSource.REGISTRATION and incoming.source in (
+            FactSource.PATIENT_VERBATIM,
+            FactSource.FOLLOWUP_ANSWER,
+            FactSource.DEGRADED_EXTRACTION,
+        ):
+            return True
         # A confident earlier answer is not displaced by a much less confident
         # restatement of the same thing.
         if existing.is_known and not incoming.is_known:
@@ -301,11 +314,18 @@ class Case:
     # -- the three views the triage note requires -------------------------
 
     def reported(self) -> list[Fact]:
-        """What the patient volunteered, without being asked."""
+        """What the patient gave without being asked for it.
+
+        The form counts. A patient who wrote their age and their medication at
+        the desk reported those as surely as the one who typed them into the
+        chat, and the note's distinction is against what a follow-up *had* to
+        draw out - not against paper.
+        """
         return [
             f
             for f in self.facts.values()
-            if f.source in (FactSource.PATIENT_VERBATIM, FactSource.RED_FLAG_MATCH)
+            if f.source in (FactSource.PATIENT_VERBATIM, FactSource.RED_FLAG_MATCH,
+                            FactSource.REGISTRATION)
             and f.is_known
             and f.key not in ("complaint", "language")
         ]

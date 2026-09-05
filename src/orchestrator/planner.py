@@ -84,6 +84,8 @@ WHAT YOU DO
 - Only use tool_calls when you genuinely need to look something up. Every one of them is another few seconds somebody in pain spends watching a spinner.
 - Ask about the complaint the patient actually has. Breathing questions for breathlessness, abdominal questions for stomach pain. Never work through an unrelated checklist.
 - Ask ONE question at a time, in the patient's own language.
+- One question can cover several things when they are all "any of these?" exclusions. A nurse asks "any stiff neck, rash, confusion or trouble breathing?" in one breath rather than four times over, and a patient answering "no" has answered all four. Group them when they belong together, list every fact in asking_about, and record a value for each one from the answer. A single "no" to a grouped question means false for every fact in it.
+- Do not group things that need different answers. Severity, timing and a symptom are three separate questions.
 
 HOW YOU TALK
 This matters as much as what you ask. A patient who has to work out what you mean will answer the wrong question, and a frightened or unwell person has no patience for it.
@@ -185,9 +187,11 @@ _RESPONSE_SCHEMA = {
         "asking_about": {
             "type": "string",
             "description": (
-                "The fact key your question is trying to establish, e.g. "
-                "'speaking_full_sentences'. Empty if you are not asking about a "
-                "specific fact. Used to notice when a question is being repeated."
+                "The fact keys your question is trying to establish, comma "
+                "separated. Usually one, but list all of them when you ask about "
+                "several at once, e.g. "
+                "'neck_stiffness,rash_non_blanching,confusion'. Empty if you are "
+                "not asking about a specific fact."
             ),
         },
         "conclude": {
@@ -423,8 +427,8 @@ class TriagePlanner:
                 return self._conclude(case, turn, impression=impression)
 
             asking_about = str(data.get("asking_about", "")).strip()
-            if asking_about:
-                case.asked_counts[asking_about] = case.asked_counts.get(asking_about, 0) + 1
+            for fact in [f.strip() for f in asking_about.split(",") if f.strip()]:
+                case.asked_counts[fact] = case.asked_counts.get(fact, 0) + 1
 
             case.add_vita_turn(reply, asked_about=asking_about)
             turn.reply = reply
@@ -736,31 +740,34 @@ class TriagePlanner:
         A one-word yes or no to a question we posed is not a judgement call and
         does not need a model to be reliable.
         """
-        fact = case.pending_fact
-        if not fact:
-            return
-        existing = case.facts.get(fact)
-        if existing is not None and existing.is_known:
+        pending = [f.strip() for f in (case.pending_fact or "").split(",") if f.strip()]
+        if not pending:
             return
 
         answer = _plain_answer(message)
         if answer is Tri.UNKNOWN:
             return
 
-        case.record(
-            Fact(
-                key=fact,
-                value=answer,
-                source=FactSource.FOLLOWUP_ANSWER,
-                turn=case.turn_number,
-                verbatim=message,
-                language=case.language,
-                confidence=0.95,
-                agent="backstop",
+        for fact in pending:
+            existing = case.facts.get(fact)
+            if existing is not None and existing.is_known:
+                continue
+            if self.kb.question(fact) is None:
+                continue
+            case.record(
+                Fact(
+                    key=fact,
+                    value=answer,
+                    source=FactSource.FOLLOWUP_ANSWER,
+                    turn=case.turn_number,
+                    verbatim=message,
+                    language=case.language,
+                    confidence=0.95,
+                    agent="backstop",
+                )
             )
-        )
-        turn.facts_recorded.append(fact)
-        logger.info("backstop recorded %s=%s from a one-word answer", fact, answer.value)
+            turn.facts_recorded.append(fact)
+            logger.info("backstop recorded %s=%s from a one-word answer", fact, answer.value)
 
     def _note_working_impression(self, case: Case, data: dict[str, Any]) -> None:
         """Keep the running impression current.
@@ -880,7 +887,7 @@ class TriagePlanner:
             floor_reason=EscalationReason.RED_FLAG if strongest else None,
         )
         case.decided_in_mode = self.llm.mode
-        case.clinical_impression = impression.strip()
+        case.clinical_impression = impression.strip() or self._deterministic_impression(case)
         case.status = (
             CaseStatus.AWAITING_REVIEW
             if case.decision.requires_human_review
@@ -904,6 +911,51 @@ class TriagePlanner:
         turn.finished = True
         turn.mode = self.llm.mode
         return turn
+
+    def _deterministic_impression(self, case: Case) -> str:
+        """A reading of the case written without the model.
+
+        The red-flag fast path closes a case before the planner gets a turn -
+        deliberately, because somebody who has just written that they cannot
+        breathe should not wait on a network call. But it left the clinician
+        with a grade and no account of it, which is the one place a note should
+        never be empty.
+
+        This is assembled from what actually fired. It claims nothing the rules
+        did not establish, and it says plainly that no assessment was made.
+        """
+        if case.decision is None:
+            return ""
+
+        flags = [f for f in self.kb.red_flags if f.id in case.red_flags]
+        parts: list[str] = []
+
+        if flags:
+            parts.append(
+                "Recognised directly from the patient's own words: "
+                + "; ".join(f.label.lower() for f in flags)
+                + "."
+            )
+        if case.decision.cited_rules:
+            rules = [self.kb.rule(r) for r in case.decision.cited_rules]
+            parts.append(
+                "Matched "
+                + ", ".join(r.rule_id for r in rules if r)
+                + ". "
+                + " ".join(r.rationale for r in rules if r and r.rationale)
+            )
+        if case.decision.unknowns:
+            parts.append(
+                "Not established: "
+                + ", ".join(u.replace("_", " ") for u in case.decision.unknowns[:6])
+                + "."
+            )
+        parts.append(
+            "Closed on the deterministic pathway without a conversational "
+            "assessment, so this is what the rules found rather than a reading "
+            "of the patient."
+        )
+        return " ".join(parts)
 
     def _closing_message(self, case: Case, appointment: Any = None) -> str:
         """What the patient is told at the end.

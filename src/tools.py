@@ -532,12 +532,33 @@ class ToolLayer:
 
     # -- fact recording --------------------------------------------------
 
-    def _record_facts(self, case_id: str, facts: list[dict[str, Any]]) -> dict[str, Any]:
+    def record_registration_facts(
+        self, case_id: str, facts: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Seed facts taken from the registration form.
+
+        Same validation as the published tool, different provenance. Called by
+        the service that opens a case, never reachable over MCP.
+        """
+        return self._record_facts(case_id, facts, source=FactSource.REGISTRATION)
+
+    def _record_facts(
+        self,
+        case_id: str,
+        facts: list[dict[str, Any]],
+        *,
+        source: FactSource | None = None,
+    ) -> dict[str, Any]:
         """Record facts, rejecting anything the knowledge base does not define.
 
         The bound is what makes this tool safe to expose. A planner that could
         write arbitrary keys could write `urgency`, and a planner that could
         write arbitrary values could write a symptom nobody reported.
+
+        `source` is a Python-only argument, deliberately absent from the schema
+        this tool is published with: registration seeds facts through the same
+        validation as everything else, but the planner cannot claim to be the
+        registration form.
         """
         case = self._case_or_error(case_id)
         if case is None:
@@ -601,7 +622,8 @@ class ToolLayer:
                 Fact(
                     key=key,
                     value=value,
-                    source=FactSource.FOLLOWUP_ANSWER if case.turn_number > 1 else FactSource.PATIENT_VERBATIM,
+                    source=source or (FactSource.FOLLOWUP_ANSWER if case.turn_number > 1
+                                      else FactSource.PATIENT_VERBATIM),
                     turn=case.turn_number,
                     verbatim=evidence,
                     language=case.language,

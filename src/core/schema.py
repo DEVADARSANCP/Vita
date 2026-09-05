@@ -129,6 +129,10 @@ class FactSource(str, Enum):
 
     #: Volunteered in the patient's own opening description.
     PATIENT_VERBATIM = "patient_verbatim"
+    #: Written on the registration form before the conversation began. A
+    #: different kind of evidence from anything said afterwards: the patient
+    #: read it off the box rather than recalled it under questioning.
+    REGISTRATION = "registration"
     #: Established by asking, because a rule needed it.
     FOLLOWUP_ANSWER = "followup_answer"
     #: Recalled from a previous visit by the same patient.

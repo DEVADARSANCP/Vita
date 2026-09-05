@@ -194,19 +194,16 @@ class VitaServices:
 
         reading = self.medications.from_text(case.medications_declared)
         if reading.facts:
-            self.tools.call(
-                "record_facts",
-                {
-                    "case_id": case.case_id,
-                    "facts": [
-                        {
-                            "key": key,
-                            "value": value,
-                            "evidence": f"named at registration: {reading.attribution.get(key, '')}",
-                        }
-                        for key, value in reading.facts.items()
-                    ],
-                },
+            self.tools.record_registration_facts(
+                case.case_id,
+                [
+                    {
+                        "key": key,
+                        "value": value,
+                        "evidence": f"named at registration: {reading.attribution.get(key, '')}",
+                    }
+                    for key, value in reading.facts.items()
+                ],
             )
             logger.info("case %s: registration medications established %s",
                         case.case_id, ", ".join(reading.facts))
@@ -246,7 +243,7 @@ class VitaServices:
                 Fact(
                     key=key,
                     value=value,
-                    source=FactSource.PATIENT_VERBATIM,
+                    source=FactSource.REGISTRATION,
                     turn=0,
                     verbatim=f"given at registration: {said}",
                     language=language,

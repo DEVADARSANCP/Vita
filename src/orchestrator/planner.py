@@ -93,7 +93,7 @@ This matters as much as what you ask. A patient who has to work out what you mea
 - No formal or old-fashioned phrasing. Write the way you would speak to someone across a desk.
 - If a question needs an example to be clear, give one.
 - The same applies in every language. Simple everyday Malayalam or Hindi, not a formal register.
-- Record what they tell you with record_facts, quoting their words.
+- Record what they tell you with record_facts, quoting their words. Use the exact fact names from all_fact_keys - a name you invent is rejected and what the patient told you is lost. Say a temperature as they said it; the system converts Fahrenheit for you.
 - Call tools when you want to know something: what the rules are still waiting on, what this patient came in with last time, what hospital policy says.
 - Treat the open questions as a guide, not a script. Ask the ones that fit what the patient described first. The general ones - age, pregnancy, whether they have been in recently - still matter and should still be asked, just after the ones about the problem they actually came in with.
 
@@ -478,7 +478,13 @@ class TriagePlanner:
         blocks.append("CURRENT TRIAGE STATE (produced by the rules, not by you):\n" + _pretty(state))
 
         questions = self._tool("get_open_questions", {"case_id": case.case_id}, turn)
+        keys = questions.pop("all_fact_keys", [])
         blocks.append("WHAT THE RULES ARE STILL WAITING ON:\n" + _pretty(questions))
+        if keys:
+            blocks.append(
+                "FACT NAMES record_facts ACCEPTS (use these exactly, nothing else):\n  "
+                + ", ".join(keys)
+            )
 
         # Memory is worth one look at the start of an intake and rarely after.
         if case.turn_number <= 1 and case.patient_id:

@@ -30,6 +30,7 @@ and a bad one costs somebody a two-second rejection rather than an ambulance.
 
 from __future__ import annotations
 
+import difflib
 import logging
 from typing import Any, Callable
 
@@ -44,6 +45,37 @@ logger = logging.getLogger(__name__)
 #: unanswerable and dropped from the open questions. Two is a clarification; a
 #: third is an interrogation.
 MAX_ASKS_PER_FACT = 2
+
+#: Plausible ranges for the numeric facts. A value outside its range is a
+#: misread rather than a patient, and is rejected instead of clamped - a garbled
+#: number squeezed into range would satisfy a threshold by accident.
+NUMERIC_RANGE: dict[str, tuple[float, float]] = {
+    "temperature_c": (25.0, 45.0),
+    "severity": (0.0, 10.0),
+    "age_years": (0.0, 120.0),
+    "onset_hours": (0.0, 24 * 365 * 5),
+    "duration_days": (0.0, 365 * 5),
+}
+
+#: Where a Fahrenheit reading sits. The two scales do not overlap anywhere a
+#: living person's temperature can be, so the number identifies its own unit.
+_FAHRENHEIT_RANGE = (77.0, 113.0)
+
+
+def normalise_temperature(value: float) -> float | None:
+    """Read a temperature in whatever scale it was given, and return Celsius.
+
+    Patients say "101" and they say "38.5", and they mean the same fever. This
+    is arithmetic with a patient-safety threshold on the far side, so it is done
+    here rather than asked of a model: recording 101 as Celsius clears the 40
+    degree hyperpyrexia line by sixty degrees and grades a routine fever HIGH.
+    """
+    low, high = NUMERIC_RANGE["temperature_c"]
+    if low <= value <= high:
+        return round(value, 1)
+    if _FAHRENHEIT_RANGE[0] <= value <= _FAHRENHEIT_RANGE[1]:
+        return round((value - 32.0) * 5.0 / 9.0, 1)
+    return None
 
 
 def _string(description: str, *, required: bool = False) -> dict[str, Any]:
@@ -119,7 +151,8 @@ class ToolLayer:
             "The facts the rules are still waiting on, most urgent first, with the "
             "rule that wants each one and a suggested wording. Use these to steer "
             "your questions - but ask them in your own words, in the patient's "
-            "language, and follow whatever they actually say.",
+            "language, and follow whatever they actually say. Also returns "
+            "all_fact_keys: every fact name record_facts accepts.",
             {"case_id": _string("Case identifier", required=True)},
             self._get_open_questions,
         )
@@ -209,7 +242,10 @@ class ToolLayer:
         self._add(
             "record_facts",
             "Record what the patient has told you, as structured facts. Only fact "
-            "keys the knowledge base already defines are accepted. Use 'true', "
+            "keys the knowledge base already defines are accepted - get them from "
+            "all_fact_keys in get_open_questions rather than inventing a name. "
+            "Temperatures go in as temperature_c in whatever scale the patient "
+            "used; it is converted for you. Use 'true', "
             "'false' or 'unknown' for symptoms, and a number for measurements. Quote "
             "the patient's own words as evidence for each one. Never record a fact "
             "the patient did not establish.",
@@ -397,6 +433,7 @@ class ToolLayer:
         return {
             "case_id": case_id,
             "open_questions": questions[:12],
+            "all_fact_keys": sorted(self.services.kb.questions),
             "already_asked_and_unresolved": spent,
             "note": (
                 "Anything in already_asked_and_unresolved has been asked twice "
@@ -502,16 +539,46 @@ class ToolLayer:
             evidence = str(entry.get("evidence", "")).strip()
 
             if not key or self.services.kb.question(key) is None:
-                rejected.append({"key": key, "why": "not a fact this knowledge base defines"})
+                # Say what the right key would have been. A bare rejection made
+                # the planner guess again and lose the value entirely - it wrote
+                # 'temperature' for temperature_c and the reading was dropped.
+                near = difflib.get_close_matches(key, self.services.kb.questions, n=3, cutoff=0.5)
+                rejected.append({
+                    "key": key,
+                    "why": "not a fact this knowledge base defines",
+                    "did_you_mean": near,
+                })
                 continue
 
             value: Any = Tri.coerce(raw)
             if value is Tri.UNKNOWN:
                 try:
-                    value = float(raw)
+                    number = float(raw)
                 except ValueError:
                     rejected.append({"key": key, "why": f"value {raw!r} is neither three-valued nor numeric"})
                     continue
+
+                if key == "temperature_c":
+                    converted = normalise_temperature(number)
+                    if converted is None:
+                        rejected.append({
+                            "key": key,
+                            "why": f"{number} is not a temperature a person can have, in either scale",
+                        })
+                        continue
+                    if converted != number:
+                        logger.info("read %s as %sF = %sC", number, number, converted)
+                    number = converted
+
+                low, high = NUMERIC_RANGE.get(key, (float("-inf"), float("inf")))
+                if not low <= number <= high:
+                    rejected.append({
+                        "key": key,
+                        "why": f"{number} is outside the plausible range for {key} ({low} to {high})",
+                    })
+                    continue
+
+                value = number
 
             case.record(
                 Fact(

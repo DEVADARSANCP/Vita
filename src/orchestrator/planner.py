@@ -428,6 +428,12 @@ class TriagePlanner:
             data = outcome.data if isinstance(outcome.data, dict) else {}
             turn.thinking = str(data.get("thinking", "")).strip()
             self._apply_transcript(case, data, turn)
+            # From here the spoken turn is an ordinary one. A second tool round
+            # carries no audio, and the plain-answer backstop reads the message
+            # directly - both were being handed the placeholder, so a spoken
+            # "no" settled nothing.
+            if turn.transcript:
+                message = turn.transcript
             self._apply_complaint(case, data)
 
             language = str(data.get("language", "")).strip()
@@ -509,6 +515,8 @@ class TriagePlanner:
         data = outcome.data if isinstance(outcome.data, dict) else {}
         turn.thinking = str(data.get("thinking", "")).strip()
         self._apply_transcript(case, data, turn)
+        if turn.transcript:
+            message = turn.transcript
         self._record(case, data.get("facts") or [], turn)
         self._note_working_impression(case, data)
 
@@ -618,13 +626,42 @@ class TriagePlanner:
                 "conclude on their answer."
             )
 
+        # A spoken turn arrives with the clip attached and no words yet.
+        # Saying so is not optional: told the patient "wrote (spoken)", the
+        # model answers the audio perfectly well and leaves `transcript`
+        # empty, so the patient never sees their own words come back and a
+        # mishearing becomes invisible instead of obvious.
+        if spoken:
+            heard = (
+                "The patient did not type this turn. They SPOKE it, and the "
+                "recording is attached to this request.\n\n"
+                "Before anything else, listen to it and put exactly what they "
+                "said into `transcript` - their words, their language, no "
+                "translation, no tidying, no summary. It is shown back to them "
+                "so they can correct a mishearing, so it has to be what was "
+                "actually said rather than what you understood it to mean. If "
+                "there is no intelligible speech in the clip - silence, noise, "
+                "a clip that will not play - then set `transcript` to an empty "
+                "string and record no facts from it.\n\n"
+                "That last instruction is the important one. You can see the "
+                "question you asked a moment ago, so writing a plausible answer "
+                "to it is easy and it will read as real. Nothing after this "
+                "point can tell an invented sentence from a spoken one: it "
+                "becomes a clinical fact, it changes an urgency, and it can "
+                "send somebody to Emergency for a symptom they never reported. "
+                "Report only what is actually in the recording.\n\n"
+                "Then treat that transcript as their message and carry on."
+            )
+        else:
+            heard = f"The patient has just written:\n  {message}"
+
         return (
             f"CASE {case.case_id}"
             f"{f' - patient {case.patient_name}' if case.patient_name else ''}\n"
             f"Questions asked so far: {asked}\n\n"
             f"CONVERSATION:\n{conversation}\n\n"
             f"{context}\n\n"
-            f"The patient has just written:\n  {message}\n"
+            f"{heard}\n"
             f"{guidance}\n\n"
             "Record what this message established, then either ask your next "
             "question or conclude. If you need to look something up first, use "

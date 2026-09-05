@@ -43,6 +43,20 @@ logger = logging.getLogger(__name__)
 #: question, and anything beyond it is more likely a stuck recorder.
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
 
+#: Shortest clip accepted, and the reason it is a hard guard rather than a hint.
+#:
+#: A container header with no samples after it is not silence - it is a broken
+#: recording, and a model handed one plus a conversation will answer the
+#: question it can see rather than report that it heard nothing. Measured: a
+#: 46-byte clip produced "I felt like I was about to black out", a sentence
+#: nobody said, which was recorded as a fact and sent the case to Emergency.
+#:
+#: Nothing downstream can tell an invented sentence from a real one, so this
+#: has to be caught here, before the clip reaches the model at all. The floor
+#: is deliberately low: opus runs about 3KB a second, so a spoken "no" clears
+#: it several times over.
+MIN_AUDIO_BYTES = 1024
+
 #: What a browser's MediaRecorder actually produces, plus the obvious uploads.
 ACCEPTED_TYPES = {
     "audio/webm",
@@ -133,6 +147,8 @@ class VoiceListener:
         """
         if not audio:
             return "no audio received"
+        if len(audio) < MIN_AUDIO_BYTES:
+            return "that recording was empty; please try again"
         if len(audio) > MAX_AUDIO_BYTES:
             return "that recording is too long; please keep it under a minute"
         base = mime_type.split(";")[0].strip().lower()

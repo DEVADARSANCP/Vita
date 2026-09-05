@@ -20,6 +20,10 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Devfolio submission copy. Written for the submission form, not for the
+# repository - the README is what a judge reads here.
+submission/
+
 # Scratch
 *.log
 _attic/

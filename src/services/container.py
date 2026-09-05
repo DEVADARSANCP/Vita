@@ -243,31 +243,33 @@ class VitaServices:
         if case is None:
             return {"error": f"no case {case_id!r}"}
 
-        heard = self.voice.listen(audio, mime_type)
-        case.voice_clips.append(heard.as_dict())
+        problem = self.voice.check(audio, mime_type)
+        if problem:
+            return {"error": problem}
 
-        if heard.error:
-            self.cases.save(case)
-            return {"error": heard.error, "transcript": heard.as_dict()}
+        self._live[case.case_id] = case
+        result = self.planner.handle(case, "", audio=(audio, mime_type.split(";")[0]))
+        self.cases.save(case)
 
-        if not heard.heard or not heard.text:
-            self.cases.save(case)
-            self.cases.audit(case_id, "voice_unintelligible")
-            return {"transcript": heard.as_dict(), "turn": None}
-
-        # A patient who speaks Malayalam should be answered in it, even if they
-        # picked something else on the form.
-        if heard.language and heard.language != case.language:
-            logger.info("case %s heard in %s; switching from %s",
-                        case_id, heard.language, case.language)
-            case.language = heard.language
-
-        self.cases.audit(case_id, "voice_transcribed", detail=heard.text[:120])
-        result = self.message(case_id, heard.text)
-        return {
-            "transcript": heard.as_dict(),
-            "turn": result,
+        heard = {
+            "heard": bool(result.transcript),
+            "transcript": result.transcript,
+            "language": case.language,
         }
+        case.voice_clips.append(heard)
+        self.cases.save(case)
+
+        if not result.transcript:
+            self.cases.audit(case_id, "voice_unintelligible")
+            return {"transcript": heard, "turn": None}
+
+        self.cases.audit(case_id, "voice_transcribed", detail=result.transcript[:120])
+        if result.red_flags:
+            self.cases.audit(case_id, "red_flags_matched", detail=", ".join(result.red_flags))
+        if result.finished:
+            self._on_finished(case)
+
+        return {"transcript": heard, "turn": result}
 
     def read_medication_photo(self, case_id: str, image: bytes, mime_type: str) -> dict[str, Any]:
         """Read a photo of the patient's medication and record what it establishes.

@@ -80,7 +80,8 @@ _SYSTEM = """You are the intake assistant at a hospital triage desk. You are tal
 Your job is to understand what is wrong well enough that a triage rule engine can grade it, and to write up what you learned for a clinician. You are good at this in the way an experienced triage nurse is: you ask what matters for the problem in front of you, you follow what the patient actually says rather than working through a list, and you stop when asking more would not change anything.
 
 WHAT YOU DO
-- Call set_complaint as soon as you know which of the five this is. Until you do, only the general rules apply and the questions offered to you will not fit the patient. This is the single most important call you make.
+- Set `complaint` in your answer as soon as you know which of the five this is. Until you do, only the general rules apply and the questions offered to you will not fit the patient. This is the single most important field you fill in. Do not call set_complaint for it - answering the field is instant, a tool call makes the patient wait for another round trip.
+- Only use tool_calls when you genuinely need to look something up. Every one of them is another few seconds somebody in pain spends watching a spinner.
 - Ask about the complaint the patient actually has. Breathing questions for breathlessness, abdominal questions for stomach pain. Never work through an unrelated checklist.
 - Ask ONE question at a time, in the patient's own language.
 
@@ -210,6 +211,26 @@ _RESPONSE_SCHEMA = {
             "type": "string",
             "description": "BCP-47 code for the language the patient is writing in.",
         },
+        "complaint": {
+            "type": "string",
+            "enum": ["fever", "injury", "chest_pain", "breathing_difficulty",
+                     "abdominal_pain", "out_of_scope", "undetermined"],
+            "description": (
+                "Which complaint this is, as soon as you know. Set it here rather "
+                "than calling set_complaint - a tool call costs the patient a "
+                "whole extra round trip for something you can simply say. Use "
+                "'out_of_scope' for a stroke, a pregnancy complication, a mental "
+                "health crisis, a child, an eye or dental problem."
+            ),
+        },
+        "transcript": {
+            "type": "string",
+            "description": (
+                "ONLY when the patient sent audio: exactly what they said, in "
+                "their own language and their own words. Do not translate, tidy "
+                "or summarise it. Empty for typed messages."
+            ),
+        },
     },
 }
 
@@ -228,6 +249,10 @@ class PlannerTurn:
     red_flags: list[str] = field(default_factory=list)
     asking_about: str = ""
     converged: bool = False
+
+    #: Set when the patient spoke rather than typed, with what was heard.
+    spoken: bool = False
+    transcript: str = ""
     notes: list[str] = field(default_factory=list)
 
 
@@ -270,11 +295,30 @@ class TriagePlanner:
         self.mcp = mcp
         self.red_flag_agent = red_flag_agent
         self.phraser = phraser
+        self._pending_audio: tuple[bytes, str] | None = None
+        self._pending_turn: Any = None
 
     # -- entry point -----------------------------------------------------
 
-    def handle(self, case: Case, message: str) -> PlannerTurn:
+    def handle(
+        self,
+        case: Case,
+        message: str,
+        *,
+        audio: tuple[bytes, str] | None = None,
+    ) -> PlannerTurn:
+        """Process one patient turn, typed or spoken.
+
+        A spoken turn attaches the clip to the same call that does everything
+        else. Transcribing first and then asking again is two round trips for
+        one exchange, and at a triage desk the second one is time somebody in
+        pain spends staring at a screen.
+        """
         message = (message or "").strip()
+        if audio is not None and not message:
+            # The words are in the clip. Placeholder text so the turn is
+            # recorded in order; the real transcript replaces it below.
+            message = "(spoken)"
         if not message:
             return PlannerTurn(
                 case=case,
@@ -283,13 +327,19 @@ class TriagePlanner:
             )
 
         already_decided = case.decision is not None
-        case.add_patient_turn(message)
+        patient_turn = case.add_patient_turn(message)
         turn = PlannerTurn(case=case, reply="", mode=self.llm.mode)
+        turn.spoken = audio is not None
+        self._pending_audio = audio
+        self._pending_turn = patient_turn
 
         # Deterministic pass first, always. Runs with no model and no network,
         # so the most dangerous presentations are caught even when the planner
-        # cannot run at all.
-        self._red_flags(case, message, turn)
+        # cannot run at all. A spoken turn has no words yet, so it runs again
+        # on the transcript once the model reports it - "I can't breathe" must
+        # fire whether it was typed or said.
+        if audio is None:
+            self._red_flags(case, message, turn)
         if case.out_of_scope or self._red_flag_ceiling(case).rank >= Urgency.HIGH.rank:
             return self._conclude(case, turn, impression="")
 
@@ -316,10 +366,11 @@ class TriagePlanner:
 
         for round_number in range(1, MAX_TOOL_ROUNDS + 1):
             outcome = self.llm.generate_json(
-                self._prompt(case, message, context),
+                self._prompt(case, message, context, spoken=turn.spoken and round_number == 1),
                 _RESPONSE_SCHEMA,
                 system_instruction=_SYSTEM,
                 temperature=0.2,
+                media=self._pending_audio if round_number == 1 else None,
             )
             turn.mode = self.llm.mode
 
@@ -330,6 +381,8 @@ class TriagePlanner:
 
             data = outcome.data if isinstance(outcome.data, dict) else {}
             turn.thinking = str(data.get("thinking", "")).strip()
+            self._apply_transcript(case, data, turn)
+            self._apply_complaint(case, data)
 
             language = str(data.get("language", "")).strip()
             if language:
@@ -390,10 +443,11 @@ class TriagePlanner:
 
         context = self._gather_context(case, turn)
         outcome = self.llm.generate_json(
-            self._prompt(case, message, context),
+            self._prompt(case, message, context, spoken=turn.spoken),
             _RESPONSE_SCHEMA,
             system_instruction=_CONTINUING,
             temperature=0.3,
+            media=self._pending_audio,
         )
         turn.mode = self.llm.mode
 
@@ -407,6 +461,7 @@ class TriagePlanner:
 
         data = outcome.data if isinstance(outcome.data, dict) else {}
         turn.thinking = str(data.get("thinking", "")).strip()
+        self._apply_transcript(case, data, turn)
         self._record(case, data.get("facts") or [], turn)
         self._note_working_impression(case, data)
 
@@ -500,7 +555,7 @@ class TriagePlanner:
 
         return "\n\n".join(blocks)
 
-    def _prompt(self, case: Case, message: str, context: str) -> str:
+    def _prompt(self, case: Case, message: str, context: str, *, spoken: bool = False) -> str:
         conversation = "\n".join(
             f"  {'PATIENT' if t.role == 'patient' else 'YOU'}: {t.text}"
             for t in case.turns[-8:]
@@ -612,6 +667,55 @@ class TriagePlanner:
                 "concluded": concluded,
             }
         )
+
+    def _apply_complaint(self, case: Case, data: dict[str, Any]) -> None:
+        """Take the complaint straight from the answer.
+
+        This used to be a tool call, and the planner made it on nearly every
+        first turn - so nearly every first turn cost two round trips instead of
+        one. It is a single enum value; there was never anything to look up.
+        """
+        raw = str(data.get("complaint", "")).strip().lower()
+        if not raw or raw == "undetermined":
+            return
+        try:
+            complaint = Complaint(raw)
+        except ValueError:
+            return
+        if complaint is case.complaint:
+            return
+
+        logger.info("case %s complaint set to %s", case.case_id, complaint.value)
+        case.complaint = complaint
+        if complaint is Complaint.OUT_OF_SCOPE:
+            case.out_of_scope = True
+
+    def _apply_transcript(self, case: Case, data: dict[str, Any], turn: PlannerTurn) -> None:
+        """Put what the patient actually said into the record.
+
+        A spoken turn is entered as a placeholder so the conversation keeps its
+        order, then replaced once the model reports what it heard. The patient
+        sees their own words echoed back, which is what makes a mishearing
+        obvious and correctable rather than merely confusing.
+        """
+        if not turn.spoken or self._pending_turn is None:
+            return
+
+        said = str(data.get("transcript", "")).strip()
+        if said:
+            self._pending_turn.text = said
+            turn.transcript = said
+            self._red_flags(case, said, turn)
+            return
+
+        # Only the first round of a turn carries the audio. If the planner asked
+        # for a tool call, the round after it has nothing to listen to and
+        # reports no transcript - which must not erase what was already heard.
+        if turn.transcript:
+            return
+
+        self._pending_turn.text = "(nothing I could make out)"
+        turn.transcript = ""
 
     def _note_working_impression(self, case: Case, data: dict[str, Any]) -> None:
         """Keep the running impression current.

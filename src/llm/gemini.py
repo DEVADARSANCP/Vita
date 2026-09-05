@@ -189,8 +189,14 @@ class GeminiClient:
         *,
         system_instruction: str = "",
         temperature: float = 0.0,
+        media: tuple[bytes, str] | None = None,
     ) -> LLMResult:
         """Ask for JSON matching `schema`, and return it only if it parses.
+
+        `media` attaches an image or an audio clip to the same request. That is
+        what lets a spoken turn cost one round trip rather than two: the model
+        hears the patient and answers in a single call, instead of transcribing
+        first and being asked again with the text.
 
         Temperature defaults to zero. Extraction is not a creative task, and two
         different readings of the same sentence would make the triage note
@@ -213,8 +219,16 @@ class GeminiClient:
                         timeout=int(CALL_TIMEOUT_SECONDS * 1000)
                     ),
                 )
+                contents: Any = prompt
+                if media is not None:
+                    payload, mime_type = media
+                    contents = [
+                        self._types.Part.from_bytes(data=payload, mime_type=mime_type),
+                        prompt,
+                    ]
+
                 response = self._client.models.generate_content(
-                    model=self.model, contents=prompt, config=config
+                    model=self.model, contents=contents, config=config
                 )
                 text = (response.text or "").strip()
                 if not text:

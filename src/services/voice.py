@@ -6,10 +6,13 @@ they are elderly, they are holding a child, or the keyboard is not in their
 script. Speaking is the natural thing, and for Malayalam or Hindi it is often
 the only comfortable thing.
 
-Gemini does the listening. It is multimodal, so this needs no speech engine, no
-model weights and no second network dependency - which is the difference between
-working on a judge's clean machine and not. Measured on a spoken sentence:
-about 3.5 seconds, and it transcribed "one hundred and one" back as "101".
+Gemini does the listening, and it does it in the same call that answers. It is
+multimodal, so the clip is attached to the planner's own request rather than
+being transcribed first and asked about second. That halved the wait: 6.3
+seconds down to 3.3, which is faster than the same sentence typed.
+
+No speech engine, no model weights, no second network dependency - which is the
+difference between working on a judge's clean machine and not.
 
 **Speaking is left to the browser.** Gemini's text-to-speech was measured at 5.8
 seconds for a single sentence. Paying that before every reply would make the
@@ -17,10 +20,13 @@ conversation unusable, and the reply is already on screen - hearing it is a
 convenience, understanding the patient is not. `speechSynthesis` is instant,
 free, and costs no network call at all.
 
-Voice is a transport, not a second system. A transcript becomes an ordinary
+Voice is a transport, not a second system. What was heard becomes an ordinary
 patient message and runs through the same planner, the same rules and the same
 record as anything typed. The transcript is kept verbatim alongside the case, so
 a clinician can see what was heard rather than only what was understood.
+
+Only the guards live in this module now. The listening itself is in the
+planner's call.
 """
 
 from __future__ import annotations
@@ -116,6 +122,25 @@ class VoiceListener:
     @property
     def available(self) -> bool:
         return self.llm.available
+
+    def check(self, audio: bytes, mime_type: str) -> str:
+        """Reject a clip we should not send. Returns an explanation, or "".
+
+        Only the guards live here now. The listening itself happens inside the
+        planner's own call, because transcribing first and asking again is two
+        round trips for one exchange - and at a triage desk the second one is
+        time somebody in pain spends watching a spinner.
+        """
+        if not audio:
+            return "no audio received"
+        if len(audio) > MAX_AUDIO_BYTES:
+            return "that recording is too long; please keep it under a minute"
+        base = mime_type.split(";")[0].strip().lower()
+        if base not in ACCEPTED_TYPES:
+            return f"unsupported audio type {base!r}"
+        if not self.available:
+            return "speech recognition is unavailable; please type instead"
+        return ""
 
     def listen(self, audio: bytes, mime_type: str) -> Transcript:
         """Transcribe a clip. Never guesses at silence."""

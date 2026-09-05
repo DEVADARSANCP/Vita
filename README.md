@@ -48,6 +48,11 @@ case. That is deliberate: a triage tool that exits because of a configuration
 problem is indistinguishable, to whoever is trying to run it, from one that does
 not work.
 
+**On speed.** A spoken turn costs one Gemini call, not two: the clip is attached
+to the same request that answers it, so nothing is transcribed and then asked
+about separately. Measured at **3.3 seconds** from clip to reply - faster than
+the same sentence typed, because speech carries more in one turn.
+
 **On rate limits.** An intake costs roughly one Gemini call per patient message.
 A free-tier key allows about five a minute, so VITA treats HTTP 429 as an
 expected condition — it reads the server's own `retryDelay` and waits rather

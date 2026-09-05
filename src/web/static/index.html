@@ -28,6 +28,11 @@
   .msg.patient { justify-content: flex-end; }
   .bubble { max-width: 82%; padding: 11px 14px; border-radius: 13px; line-height: 1.55; }
   .msg.vita .bubble { background: var(--panel-2); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.staff .bubble { background: var(--low-bg); border: 1px solid var(--low); border-bottom-left-radius: 4px; }
+  .bubble .from {
+    display: block; font-size: 10px; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--low); font-weight: 700; margin-bottom: 4px;
+  }
   .msg.patient .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
 
   .composer { display: flex; gap: 8px; align-items: flex-end; }
@@ -167,6 +172,11 @@
       <button id="photo-btn" title="Send a photo of your medicine">📷</button>
       <button class="primary" id="send">Send</button>
     </div>
+    <div style="margin-top:9px">
+      <button id="ask-human">Ask to speak to someone at the hospital</button>
+      <span class="tiny muted" id="ask-state"></span>
+    </div>
+
     <div class="tiny muted" id="photo-hint" style="margin-top:6px">
       Taking any medicine? Tap 📷 and photograph the packet — you do not need to
       spell the name.
@@ -216,14 +226,33 @@ for (const b of document.querySelectorAll("#f-meds button")) {
   };
 }
 
-function bubble(role, text) {
+let shownTurns = 0;
+
+function bubble(role, text, author) {
   const row = el("div", `msg ${role}`);
   const box = el("div", "bubble");
-  box.textContent = text;
+  if (role === "staff") box.append(el("span", "from", author || "Hospital"));
+  box.append(document.createTextNode(text));
   row.append(box);
   $("chat").append(row);
+  shownTurns += 1;
   row.scrollIntoView({ behavior: "smooth", block: "end" });
 }
+
+/* Somebody at the hospital can type into this conversation. Poll for it, so
+   their message arrives while the patient is sitting there rather than only
+   after the patient happens to send something. */
+async function pollForStaff() {
+  if (!caseId) return;
+  try {
+    const d = await api(`/api/cases/${caseId}/conversation?since=${shownTurns}`);
+    for (const t of d.turns) {
+      if (t.role === "staff") bubble("staff", t.text, t.author);
+      else shownTurns += 1;
+    }
+  } catch { /* a failed poll is not worth telling the patient about */ }
+}
+setInterval(pollForStaff, 5000);
 
 /* ---------- registration ---------- */
 async function beginIntake() {
@@ -305,6 +334,28 @@ $("input").addEventListener("input", (e) => {
   e.target.style.height = "auto";
   e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
 });
+
+/* ---------- asking for a person ----------
+   Not everything is a triage question. Somebody frightened, or who does not
+   want to explain themselves to software, should be able to ask for a human
+   without having to work out how. It lands in the same queue the staff already
+   watch. */
+
+$("ask-human").onclick = async () => {
+  if (!caseId) return;
+  $("ask-human").disabled = true;
+  try {
+    await api(`/api/cases/${caseId}/request-clinician`, {
+      method: "POST",
+      body: JSON.stringify({ reason: "Asked from the intake chat." }),
+    });
+    $("ask-state").textContent = "Asked — someone will reply here shortly.";
+    bubble("vita", "I have asked a member of staff to speak with you. They will reply in this chat.");
+  } catch (err) {
+    $("ask-state").textContent = "Could not ask just now — please go to the desk.";
+    $("ask-human").disabled = false;
+  }
+};
 
 /* ---------- medicine photo ---------- */
 $("photo-btn").onclick = () => $("photo-input") ? $("photo-input").click() : null;

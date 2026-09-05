@@ -47,6 +47,7 @@ class RequestKind(str, Enum):
     REQUEST_AMBULANCE = "request_ambulance"
     RAISE_URGENCY = "raise_urgency"
     REFER_DEPARTMENT = "refer_department"
+    TALK_TO_CLINICIAN = "talk_to_clinician"
 
 
 class RequestStatus(str, Enum):
@@ -77,6 +78,10 @@ KIND_DETAIL: dict[RequestKind, dict[str, str]] = {
     RequestKind.REFER_DEPARTMENT: {
         "label": "Refer to department",
         "consequence": "Routes the case to a department other than the one triage chose.",
+    },
+    RequestKind.TALK_TO_CLINICIAN: {
+        "label": "Patient asked to speak to someone",
+        "consequence": "Opens the chat so you can reply to them directly.",
     },
 }
 

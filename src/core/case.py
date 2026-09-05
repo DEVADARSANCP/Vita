@@ -70,9 +70,15 @@ class CaseStatus(str, Enum):
 
 @dataclass
 class Turn:
-    """One exchange. Both halves are kept in the language they happened in."""
+    """One exchange, kept in the language it happened in.
 
-    role: str  # "patient" or "vita"
+    `role` is "patient", "vita", or "staff" - a real person at the hospital
+    typing to the patient. Staff messages sit in the same thread as everything
+    else so the patient has one conversation rather than two, and so the record
+    shows who said what.
+    """
+
+    role: str  # "patient", "vita" or "staff"
     text: str
     language: str = "en"
     at: str = field(default_factory=_now)
@@ -83,9 +89,13 @@ class Turn:
     asked_about: str = ""
     driven_by_rule: str = ""
 
+    #: For a staff message, who sent it.
+    author: str = ""
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "role": self.role,
+            "author": self.author,
             "text": self.text,
             "language": self.language,
             "at": self.at,
@@ -159,6 +169,16 @@ class Case:
     #: the patient, and clearly an AI impression rather than a diagnosis.
     clinical_impression: str = ""
 
+    #: The same thing, but written from the first turn and rewritten as the
+    #: picture changes. A clinician watching the queue wants to know what this
+    #: might be before the intake finishes, not after - by then they could have
+    #: read the notes themselves.
+    working_impression: str = ""
+    working_impression_turn: int = 0
+
+    #: True once the patient has asked to speak to a person.
+    asked_for_clinician: bool = False
+
     #: One entry per turn: what the patient said, what VITA asked, what it
     #: took from the answer, and where the triage stood afterwards. This is the
     #: record that lets somebody walk a decision backwards - a triage note says
@@ -198,6 +218,13 @@ class Case:
 
     def add_patient_turn(self, text: str, language: str = "") -> Turn:
         turn = Turn(role="patient", text=text, language=language or self.language)
+        self.turns.append(turn)
+        self.updated_at = _now()
+        return turn
+
+    def add_staff_turn(self, text: str, author: str) -> Turn:
+        """A message from a real person at the hospital to the patient."""
+        turn = Turn(role="staff", text=text, language=self.language, author=author)
         self.turns.append(turn)
         self.updated_at = _now()
         return turn
@@ -319,6 +346,9 @@ class Case:
             "scope_verdict": self.scope_verdict,
             "scope_uncertain": self.scope_uncertain,
             "clinical_impression": self.clinical_impression,
+            "working_impression": self.working_impression,
+            "working_impression_turn": self.working_impression_turn,
+            "asked_for_clinician": self.asked_for_clinician,
             "medication_photos": self.medication_photos,
             "reasoning_trace": self.reasoning_trace,
             "asked_anything_else": self.asked_anything_else,

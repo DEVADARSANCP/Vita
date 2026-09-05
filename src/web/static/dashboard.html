@@ -50,6 +50,17 @@
   .turn.patient { justify-content: flex-end; }
   .turn .bub { max-width: 84%; padding: 8px 11px; border-radius: 11px; font-size: 13.5px; line-height: 1.5; }
   .turn.vita .bub { background: var(--panel-2); border: 1px solid var(--line); border-bottom-left-radius: 3px; }
+  .turn.staff .bub { background: var(--low-bg); border: 1px solid var(--low); border-bottom-left-radius: 3px; }
+  .reply { display: flex; gap: 7px; margin-top: 12px; }
+  .reply input { flex: 1; }
+  .working {
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 11px 13px; font-size: 13.5px; line-height: 1.55;
+  }
+  .working .tag {
+    display: block; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 5px;
+  }
   .turn.patient .bub { background: var(--accent-soft); border: 1px solid var(--accent); border-bottom-right-radius: 3px; }
   .turn .who { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; font-weight: 650; }
 
@@ -448,6 +459,11 @@ async function renderCase(d) {
   for (const f of kase.red_flags || []) head.append(el("span", "flag", f));
   d.append(head);
 
+  if (note.asked_for_clinician) {
+    const b = el("div", "banner warn");
+    b.textContent = "This patient has asked to speak to someone. Open the Conversation tab to reply.";
+    d.append(b);
+  }
   if (note.routing) d.append(el("div", "banner info", note.routing));
   if (rec.requires_human_review) {
     d.append(el("div", "banner warn",
@@ -455,6 +471,13 @@ async function renderCase(d) {
   }
   if (note.system_mode && note.system_mode !== "FULL") {
     d.append(el("div", "banner stop", `Decided in ${note.system_mode} mode.`));
+  }
+
+  if (note.working_impression && !note.clinical_impression) {
+    const box = el("div", "working");
+    box.append(el("span", "tag", `Early read \u00b7 as of turn ${note.working_impression_turn} \u00b7 will change`),
+               document.createTextNode(note.working_impression));
+    d.append(section("What this might be", box));
   }
 
   if (note.clinical_impression) {
@@ -590,17 +613,53 @@ async function renderConvo(d) {
   const note = await loadNote();
   d.replaceChildren();
   const turns = note.conversation || [];
-  if (!turns.length) { d.append(el("div", "empty", "No conversation recorded.")); return; }
+
   const box = el("div", "convo");
-  for (const t of turns) {
-    const row = el("div", `turn ${t.role}`);
-    const bub = el("div", "bub");
-    bub.append(el("div", "who", t.role === "patient" ? "Patient" : "VITA"));
-    bub.append(document.createTextNode(t.text));
-    row.append(bub);
-    box.append(row);
+  if (!turns.length) {
+    box.append(el("div", "empty", "Nothing said yet."));
+  } else {
+    for (const t of turns) {
+      const row = el("div", `turn ${t.role}`);
+      const bub = el("div", "bub");
+      const who = t.role === "patient" ? "Patient" : t.role === "staff" ? (t.author || "Hospital") : "VITA";
+      bub.append(el("div", "who", who));
+      bub.append(document.createTextNode(t.text));
+      row.append(bub);
+      box.append(row);
+    }
   }
   d.append(box);
+
+  // Talk to the patient directly. It lands in the chat they are already
+  // reading, so they have one conversation rather than two.
+  const reply = el("div", "reply");
+  const input = el("input");
+  input.type = "text";
+  input.placeholder = "Message the patient directly…";
+  const send = el("button", "primary", "Send");
+  const doSend = async () => {
+    const text = input.value.trim();
+    if (!text) return;
+    send.disabled = true;
+    try {
+      await api(`/api/cases/${selected}/staff-message`, {
+        method: "POST",
+        body: JSON.stringify({ text, author: "Hospital desk" }),
+      });
+      input.value = "";
+      cachedNote = null;
+      await renderConvo($("detail"));
+    } catch (err) { alert(err.message); } finally { send.disabled = false; }
+  };
+  send.onclick = doSend;
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") doSend(); });
+  reply.append(input, send);
+  d.append(reply);
+
+  const hint = el("div", "tiny muted");
+  hint.style.marginTop = "7px";
+  hint.textContent = "Your message goes straight into the patient's chat, under your name.";
+  d.append(hint);
 }
 
 async function renderNote(d) {

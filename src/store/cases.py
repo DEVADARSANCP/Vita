@@ -318,11 +318,15 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
             language=t.get("language", "en"),
             at=t.get("at", _now()),
             asked_about=t.get("asked_about", ""),
+            author=t.get("author", ""),
             driven_by_rule=t.get("driven_by_rule", ""),
         )
         for t in (raw.get("turns") or [])
     ]
     case.clinical_impression = raw.get("clinical_impression", "")
+    case.working_impression = raw.get("working_impression", "")
+    case.working_impression_turn = int(raw.get("working_impression_turn", 0) or 0)
+    case.asked_for_clinician = bool(raw.get("asked_for_clinician", False))
     case.medication_photos = list(raw.get("medication_photos") or [])
     case.reasoning_trace = list(raw.get("reasoning_trace") or [])
     case.asked_anything_else = bool(raw.get("asked_anything_else", False))

@@ -368,6 +368,59 @@ class VitaServices:
                     text=f"{case.patient_name or 'Patient'}: {key.replace('_', ' ')} confirmed.",
                 )
 
+    def staff_message(self, case_id: str, text: str, author: str) -> dict[str, Any] | None:
+        """A message from someone at the hospital to the patient.
+
+        It lands in the same thread the patient is already reading, so they have
+        one conversation rather than two. VITA does not answer it or paraphrase
+        it - a message from a person stays that person's words.
+        """
+        case = self.get_case(case_id)
+        if case is None or not text.strip():
+            return None
+
+        turn = case.add_staff_turn(text.strip(), author)
+        self._live[case.case_id] = case
+        self.cases.save(case)
+        self.cases.audit(case_id, "staff_message", actor=author, detail=text[:120])
+        return turn.as_dict()
+
+    def request_clinician(self, case_id: str, reason: str = "") -> dict[str, Any] | None:
+        """The patient has asked to speak to a person.
+
+        Raised as a request like any other so it lands in the same queue staff
+        are already watching, rather than in a separate inbox nobody checks.
+        """
+        case = self.get_case(case_id)
+        if case is None:
+            return None
+
+        existing = [
+            r for r in self.requests.list(case_id=case_id)
+            if r.kind is RequestKind.TALK_TO_CLINICIAN and r.pending
+        ]
+        if existing:
+            return existing[0].as_dict()
+
+        urgency = case.effective_urgency or "not yet graded"
+        request = Request.create(
+            case_id=case_id,
+            patient_id=case.patient_id,
+            kind=RequestKind.TALK_TO_CLINICIAN,
+            summary=f"{case.patient_name or 'Patient'} asked to speak to someone",
+            reasoning=(
+                (reason.strip() + " ") if reason.strip() else ""
+            ) + f"Currently graded {urgency}"
+              + (f", routed to {case.decision.department}." if case.decision else ", intake still open."),
+            payload={"department": case.decision.department if case.decision else ""},
+        )
+        self.requests.add(request)
+        case.asked_for_clinician = True
+        self._live[case.case_id] = case
+        self.cases.save(case)
+        self.cases.audit(case_id, "patient_asked_for_clinician", actor="patient", detail=reason[:120])
+        return request.as_dict()
+
     # -- approvals -------------------------------------------------------
 
     def decide_request(
@@ -429,6 +482,16 @@ class VitaServices:
             case.override_at = request.decided_at
             self.cases.save(case)
             return {"urgency": level}
+
+        if request.kind is RequestKind.TALK_TO_CLINICIAN:
+            # Approving simply opens the conversation; the reply is typed by a
+            # person from the dashboard rather than generated here.
+            self.staff_message(
+                case.case_id,
+                "Hello, this is the hospital desk. How can I help?",
+                by,
+            )
+            return {"chat_opened": True}
 
         if request.kind is RequestKind.REFER_DEPARTMENT:
             department = request.payload.get("department", "")
@@ -554,6 +617,9 @@ class VitaServices:
         note = build_note(case, self.kb)
         note["text"] = render_text(note)
         note["clinical_impression"] = case.clinical_impression
+        note["working_impression"] = case.working_impression
+        note["working_impression_turn"] = case.working_impression_turn
+        note["asked_for_clinician"] = case.asked_for_clinician
         note["routing"] = self.hospital.routing_note(
             case.decision.department if case.decision else ""
         )

@@ -60,6 +60,15 @@ class ReviewRequest(BaseModel):
     by: str = Field(default="clinician", max_length=120)
 
 
+class StaffMessageBody(BaseModel):
+    text: str = Field(default="", max_length=2000)
+    author: str = Field(default="Hospital desk", max_length=120)
+
+
+class ClinicianRequestBody(BaseModel):
+    reason: str = Field(default="", max_length=400)
+
+
 class DecideRequestBody(BaseModel):
     approved: bool = True
     by: str = Field(default="clinician", max_length=120)
@@ -274,6 +283,41 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
                     "by": case.override_by,
                 },
                 "medication_photos": case.medication_photos,
+            }
+        )
+
+    @app.post("/api/cases/{case_id}/staff-message")
+    def staff_message(case_id: str, body: StaffMessageBody) -> JSONResponse:
+        """Send a message from the hospital to the patient's chat."""
+        turn = services.staff_message(case_id, body.text, body.author)
+        if turn is None:
+            raise HTTPException(status_code=400, detail="unknown case, or empty message")
+        return JSONResponse({"case_id": case_id, "turn": turn})
+
+    @app.post("/api/cases/{case_id}/request-clinician")
+    def request_clinician(case_id: str, body: ClinicianRequestBody) -> JSONResponse:
+        """The patient has asked to speak to a person."""
+        result = services.request_clinician(case_id, body.reason)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"no case {case_id}")
+        return JSONResponse({"request": result})
+
+    @app.get("/api/cases/{case_id}/conversation")
+    def conversation(case_id: str, since: int = 0) -> JSONResponse:
+        """The conversation, optionally only what is new.
+
+        The patient's page polls this so a message typed by hospital staff
+        appears without them having to send something first.
+        """
+        case = services.get_case(case_id)
+        if case is None:
+            raise HTTPException(status_code=404, detail=f"no case {case_id}")
+        turns = [t.as_dict() for t in case.turns]
+        return JSONResponse(
+            {
+                "case_id": case_id,
+                "total": len(turns),
+                "turns": turns[since:] if since else turns,
             }
         )
 

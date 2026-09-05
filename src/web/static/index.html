@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VITA — Patient Intake</title>
-<link rel="stylesheet" href="/static/vita.css">
+<link rel="stylesheet" href="/static/vita.css?v=1788603894">
 <style>
   .wrap { max-width: 660px; margin: 0 auto; padding: 22px 20px 48px; }
 
@@ -12,27 +12,27 @@
   .intro h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
   .intro p { color: var(--muted); margin: 0; }
 
-  .form { display: grid; gap: 15px; }
+  .form { display: grid; gap: 13px; }
   .field label {
-    display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
-    margin-bottom: 6px; letter-spacing: 0.01em;
+    display: block; font-size: 12px; font-weight: 600; color: var(--ink-2);
+    margin-bottom: 5px; letter-spacing: 0.01em;
   }
   .field label .opt { font-weight: 400; color: var(--muted); }
 
   /* One height for every control in the form, so a row of them lines up
      whatever type each field happens to be. */
   .field input, .field select, .field textarea { width: 100%; }
-  .field input, .field select { height: 42px; }
-  .field textarea { resize: vertical; min-height: 74px; padding-top: 10px; }
+  .field input, .field select { height: 38px; }
+  .field textarea { resize: vertical; min-height: 66px; padding-top: 9px; }
 
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
 
   .choice { display: flex; gap: 8px; }
-  .choice button { flex: 1; height: 42px; padding: 0 10px; font-size: 14px; }
+  .choice button { flex: 1; height: 38px; padding: 0 10px; font-size: 13.5px; }
   .choice button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  #begin { height: 46px; font-size: 15px; margin-top: 3px; }
+  #begin { height: 42px; font-size: 14.5px; margin-top: 4px; }
 
   .chat {
     display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0;
@@ -53,10 +53,10 @@
   .msg.patient .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
 
   .composer { display: flex; gap: 8px; align-items: flex-end; }
-  .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 140px; padding-top: 12px; }
-  .composer button { height: 46px; }
-  #mic-btn, #photo-btn { width: 46px; padding: 0; font-size: 17px; line-height: 1; }
-  #send { padding: 0 20px; }
+  .composer textarea { flex: 1; resize: none; min-height: 42px; max-height: 140px; padding-top: 10px; }
+  .composer button { height: 42px; }
+  #mic-btn, #photo-btn { width: 42px; padding: 0; font-size: 16px; line-height: 1; }
+  #send { padding: 0 18px; }
   .typing { color: var(--muted); font-size: 13px; font-style: italic; margin-top: 8px; }
 
   #mic-btn.recording {

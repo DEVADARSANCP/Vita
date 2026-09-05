@@ -32,7 +32,7 @@
   --critical: #b3261e;
   --critical-bg: #fce9e7;
 
-  --radius: 10px;
+  --radius: 11px;
   --shadow: 0 1px 2px rgba(20, 23, 28, 0.06), 0 4px 12px rgba(20, 23, 28, 0.04);
 }
 
@@ -181,12 +181,17 @@ a { color: var(--accent); }
 button {
   font: inherit;
   cursor: pointer;
-  border-radius: 7px;
+  border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
-  padding: 8px 14px;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  padding: 7px 14px;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 button:hover:not(:disabled) { background: var(--line-2); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -210,8 +215,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 7px 11px;
   line-height: 1.4;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
   -webkit-appearance: none;

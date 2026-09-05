@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -492,6 +493,24 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
     def reasoning_page() -> FileResponse:
         return FileResponse(STATIC_DIR / "reasoning.html")
 
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    class FreshStatic(StaticFiles):
+        """Static files that are never served from cache.
+
+        A stylesheet cached by the browser makes a style change look like a
+        style change that did not work - you edit the CSS, reload, and see the
+        old file. Everything here is a few kilobytes read from local disk, so
+        there is nothing to gain by caching it and a genuinely confusing failure
+        mode to lose.
+        """
+
+        def is_not_modified(self, *args: Any, **kwargs: Any) -> bool:
+            return False
+
+        async def get_response(self, path: str, scope: Any) -> Any:
+            response = await super().get_response(path, scope)
+            response.headers["Cache-Control"] = "no-store, must-revalidate"
+            return response
+
+    app.mount("/static", FreshStatic(directory=STATIC_DIR), name="static")
 
     return app

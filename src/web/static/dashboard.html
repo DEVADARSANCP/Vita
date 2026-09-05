@@ -25,6 +25,16 @@
   .count.MODERATE .n { color: var(--moderate); }
   .count.LOW .n { color: var(--low); }
 
+  /* Long lists show their first few and keep the rest one click away. A
+     queue that runs off the bottom of the screen buries the case at the top
+     of it, which is the one somebody needs to look at first. */
+  .more-row { padding: 9px 2px 2px; }
+  .more-row button {
+    width: 100%; font-size: 12.5px; padding: 6px 10px;
+    background: transparent; border-style: dashed; color: var(--muted);
+  }
+  .more-row button:hover { color: var(--ink); border-color: var(--accent); }
+
   .tabs { display: flex; gap: 3px; flex-wrap: wrap; }
   .tabs button { padding: 5px 10px; font-size: 12.5px; }
   .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -176,13 +186,14 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Patient</th><th>Urgency</th><th>Complaint</th>
+            <th>Case</th><th>Patient</th><th>Urgency</th><th>Complaint</th>
             <th>Send to</th><th>Status</th>
           </tr></thead>
           <tbody id="queue"></tbody>
         </table>
       </div>
       <div class="empty" id="queue-empty" hidden>No cases yet.</div>
+      <div id="queue-more"></div>
     </div>
 
     <div class="panel">
@@ -314,6 +325,7 @@ async function refreshQueue() {
   const body = $("queue");
   body.replaceChildren();
   $("queue-empty").hidden = data.cases.length > 0;
+  const rows = [];
   for (const row of data.cases) {
     const tr = el("tr");
     if (row.case_id === selected) tr.classList.add("selected");
@@ -331,7 +343,41 @@ async function refreshQueue() {
       el("td", "tiny muted", (row.status || "").replace(/_/g, " "))
     );
     body.append(tr);
+    rows.push(tr);
   }
+  const more = $("queue-more");
+  more.replaceChildren();
+  showFirstFew(more, rows, "cases");
+}
+
+/* Show the first few, keep the rest behind one click.
+
+   Both of these lists grow without limit and both are read top-down, so the
+   longer they get the more they hide the row that mattered. `nodes` are
+   already-built rows; anything past the preview is hidden rather than left
+   out, so the count in the button is honest and expanding costs no request. */
+const PREVIEW_ROWS = 5;
+
+function showFirstFew(host, nodes, noun) {
+  nodes.forEach((n, i) => { n.hidden = i >= PREVIEW_ROWS; });
+  if (nodes.length <= PREVIEW_ROWS) return;
+
+  const wrap = el("div", "more-row");
+  const btn = el("button", null, "");
+  let open = false;
+  const label = () => {
+    btn.textContent = open
+      ? "Show fewer"
+      : `View all ${nodes.length} ${noun} (${nodes.length - PREVIEW_ROWS} more)`;
+  };
+  btn.onclick = () => {
+    open = !open;
+    nodes.forEach((n, i) => { n.hidden = !open && i >= PREVIEW_ROWS; });
+    label();
+  };
+  label();
+  wrap.append(btn);
+  host.append(wrap);
 }
 
 async function renderTodo() {
@@ -363,17 +409,25 @@ async function renderTodo() {
 
     if (waiting.length) {
       const box = el("div");
+      const rows = [];
       for (const c of waiting) {
         const row = el("div", "todo-row");
         row.onclick = () => selectCase(c.case_id);
         if (c.urgency) row.append(el("span", "urgency " + c.urgency, c.urgency));
         const what = el("div", "what");
-        what.append(el("b", null,
-          (c.patient_name || "Anonymous") + " \u2014 " + (c.complaint || "").replace(/_/g, " ")));
-        what.append(el("span", null, c.case_id + " \u00b7 send to " + (c.department || "\u2014")));
+        // An empty complaint or department used to leave a dangling dash -
+        // "Anonymous " followed by nothing - which reads as a bug rather than
+        // as "not known yet", which is what it means.
+        const complaint = (c.complaint || "").replace(/_/g, " ");
+        what.append(el("b", null, (c.patient_name || "Anonymous")
+          + (complaint && complaint !== "undetermined" ? " \u2014 " + complaint : "")));
+        what.append(el("span", null, c.case_id
+          + (c.department ? " \u00b7 send to " + c.department : " \u00b7 not routed yet")));
         row.append(what, el("span", "tiny muted", "review \u2192"));
         box.append(row);
+        rows.push(row);
       }
+      showFirstFew(box, rows, "patients");
       host.append(section("Patients no doctor has looked at yet (" + waiting.length + ")", box));
     }
   } catch (err) {
@@ -435,7 +489,15 @@ function requestCard(r) {
       });
       cachedNote = null;
       await renderTodo(); await refreshQueue(); await renderCapacity();
-      if (selected) await renderDetail();
+      // Approving a request to talk is not the end of the task, it is the
+      // start of one. Landing back on the queue left the clinician holding an
+      // approval with no obvious way to say anything, so open the case on the
+      // conversation and put the cursor in the box.
+      if (approved && r.kind === "talk_to_clinician") {
+        await openConversation(r.case_id);
+      } else if (selected) {
+        await renderDetail();
+      }
     } catch (err) {
       alert(err.message);
       yes.disabled = no.disabled = false;
@@ -479,6 +541,15 @@ async function renderCapacity() {
   }
 }
 
+async function openConversation(caseId) {
+  tab = "convo";
+  document.querySelectorAll("#case-tabs button").forEach((x) =>
+    x.classList.toggle("on", x.dataset.tab === "convo"));
+  await selectCase(caseId);
+  const box = document.querySelector(".reply input");
+  if (box) box.focus();
+}
+
 async function selectCase(caseId) {
   selected = caseId; cachedNote = null;
   $("detail-title").textContent = caseId;
@@ -508,14 +579,18 @@ async function renderCase(d) {
   head.style.cssText = "display:flex;align-items:center;gap:9px;flex-wrap:wrap";
   if (rec.urgency) head.append(el("span", `urgency ${rec.urgency}`, rec.urgency));
   if (kase.overridden) head.append(el("span", "tiny muted", `system said ${kase.system_urgency}`));
-  head.append(el("strong", null, rec.department || "—"));
+  head.append(el("strong", null, rec.department || "Not routed yet"));
   if (note.patient && note.patient.name) head.append(el("span", "tiny muted", note.patient.name));
   for (const f of kase.red_flags || []) head.append(el("span", "flag", f));
   d.append(head);
 
   if (note.asked_for_clinician) {
     const b = el("div", "banner warn");
-    b.textContent = "This patient has asked to speak to someone. Open the Conversation tab to reply.";
+    b.append(document.createTextNode("This patient has asked to speak to someone. "));
+    const go = el("button", null, "Reply to them");
+    go.style.cssText = "padding:2px 9px;font-size:12px";
+    go.onclick = () => openConversation(selected);
+    b.append(go);
     d.append(b);
   }
   if (note.routing) d.append(el("div", "banner info", note.routing));

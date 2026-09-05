@@ -136,6 +136,10 @@ def build_note(case: Case, kb: KnowledgeBase) -> dict[str, Any]:
         "generated_at": case.updated_at,
         "complaint": case.complaint.value,
         "language": case.language,
+        # The incomplete note above carries a status and this one did not, so a
+        # caller checking `note["status"]` got a KeyError on exactly the notes
+        # that were finished. Same keys either way was the point of that branch.
+        "status": "complete",
         "recommendation": {
             "urgency": decision.urgency.value,
             "department": decision.department,

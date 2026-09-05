@@ -69,6 +69,15 @@ MAX_TURNS = 8
 #: spending the whole request budget on itself.
 MAX_TOOL_ROUNDS = 3
 
+#: Sent back to the planner when it refuses a case the exemplars cover.
+SCOPE_NUDGE = (
+    "{nl}{nl}You set complaint=out_of_scope, but this description sits "
+    "confidently on '{{label}}', which this rule set covers. Part of what the "
+    "patient said may well be outside it - that part is for the clinician, and "
+    "it has been flagged for them. The covered part is still yours to triage. "
+    "Carry on with '{{label}}' and ask your next question."
+).format(nl=chr(10))
+
 #: Sent back to the planner when it concludes without writing an impression.
 NO_IMPRESSION_NUDGE = (
     "\n\nYou set conclude=true but wrote no clinical_impression. The clinician "
@@ -356,7 +365,15 @@ class TriagePlanner:
         if audio is None:
             self._red_flags(case, message, turn)
             self._check_scope(case, message, turn)
-        if case.out_of_scope or self._red_flag_ceiling(case).rank >= Urgency.HIGH.rank:
+        # Close the case, but only once. Re-concluding on every later message
+        # replayed the same closing line at somebody who had just told the
+        # hospital something new - and when a clinician had opened the chat, it
+        # talked over them. An already-decided case goes to _continue, which
+        # takes what they said, re-grades upwards on it, and leaves the
+        # conversation open.
+        if not already_decided and (
+            case.out_of_scope or self._red_flag_ceiling(case).rank >= Urgency.HIGH.rank
+        ):
             return self._conclude(case, turn, impression="")
 
         if not self.llm.available:
@@ -369,6 +386,11 @@ class TriagePlanner:
                 return turn
             turn.notes.append("planner unavailable; closing on deterministic findings only")
             return self._conclude(case, turn, impression="")
+
+        # A person is talking to them. Take what they say, keep the rules up
+        # to date, and stay out of the way.
+        if self._handed_over(case):
+            return self._continue(case, message, turn, quiet=True)
 
         if already_decided:
             return self._continue(case, message, turn)
@@ -434,7 +456,14 @@ class TriagePlanner:
             # "no" settled nothing.
             if turn.transcript:
                 message = turn.transcript
-            self._apply_complaint(case, data)
+            # A refusal the exemplars contradict is corrected, and then the
+            # planner is asked again. Correcting the complaint alone was not
+            # enough: it had already decided to stop, so the case closed on the
+            # first message with no questions asked and no rule matched.
+            corrected = self._apply_complaint(case, data)
+            if corrected and round_number < MAX_TOOL_ROUNDS:
+                context += SCOPE_NUDGE.format(label=corrected)
+                continue
 
             language = str(data.get("language", "")).strip()
             if language:
@@ -480,7 +509,21 @@ class TriagePlanner:
 
         return self._conclude(case, turn, impression="")
 
-    def _continue(self, case: Case, message: str, turn: PlannerTurn) -> PlannerTurn:
+    @staticmethod
+    def _handed_over(case: Case) -> bool:
+        """Has a person taken over this conversation?
+
+        The patient asked for someone and someone answered. From that point
+        VITA keeps listening - facts still get recorded and the grade can still
+        rise - but it stops asking questions of its own. Two voices putting
+        different questions to the same frightened person is worse than either
+        alone, and the one that should give way is the software.
+        """
+        return case.asked_for_clinician and any(t.role == "staff" for t in case.turns)
+
+    def _continue(
+        self, case: Case, message: str, turn: PlannerTurn, *, quiet: bool = False
+    ) -> PlannerTurn:
         """Talk to a patient whose triage is already done.
 
         They are in a waiting room and they have remembered something, or they
@@ -505,6 +548,8 @@ class TriagePlanner:
         turn.mode = self.llm.mode
 
         if not outcome.ok:
+            if quiet:
+                return turn
             turn.reply = (
                 "I have noted that and passed it to the hospital. If you feel worse, "
                 "please tell a member of staff now."
@@ -522,7 +567,17 @@ class TriagePlanner:
 
         # Re-grade on what they just said. Upwards only.
         self._regrade(case, before)
-        turn.finished = True  # a decision exists, so the caller refreshes the note
+        # True only when there is actually a note to refresh. A handover can
+        # happen while the intake is still open.
+        turn.finished = case.decision is not None
+
+        if quiet:
+            # The clinician is mid-conversation. Their message was answered by
+            # the patient, not VITA's, and answering anyway would read as
+            # interrupting. The facts are recorded and the grade is up to date;
+            # that is the whole job here.
+            self._trace(case, patient_said=message, turn=turn, reply="", concluded=False)
+            return turn
 
         reply = str(data.get("reply", "")).strip() or (
             "Thank you, I have added that and the hospital can see it."
@@ -761,18 +816,45 @@ class TriagePlanner:
         """
         raw = str(data.get("complaint", "")).strip().lower()
         if not raw or raw == "undetermined":
-            return
+            return ""
         try:
             complaint = Complaint(raw)
         except ValueError:
-            return
+            return ""
         if complaint is case.complaint:
-            return
+            return ""
+
+        # Refusing is the one call the planner does not get to make alone.
+        # Measured: "sore throat and mild fever" was filed out_of_scope because
+        # a sore throat is ENT - while the exemplars placed it confidently on
+        # fever, which this rule set covers in eight rules. Abandoning a case
+        # the rules handle is a worse error than triaging one they half handle,
+        # so a disagreement escalates instead: the case is triaged, and the
+        # clinician is told the two did not agree.
+        verdict = case.scope_verdict or {}
+        if (
+            complaint is Complaint.OUT_OF_SCOPE
+            and verdict.get("in_scope")
+            and verdict.get("confident")
+        ):
+            logger.info(
+                "case %s: planner said out_of_scope, exemplars said %s; triaging and flagging",
+                case.case_id, verdict.get("label", "in scope"),
+            )
+            case.scope_uncertain = True
+            inferred = Complaint(verdict["label"]) if verdict.get("label") in {
+                c.value for c in Complaint
+            } else Complaint.UNDETERMINED
+            if inferred is not Complaint.UNDETERMINED:
+                case.complaint = inferred
+                return inferred.value
+            return ""
 
         logger.info("case %s complaint set to %s", case.case_id, complaint.value)
         case.complaint = complaint
         if complaint is Complaint.OUT_OF_SCOPE:
             case.out_of_scope = True
+        return ""
 
     def _apply_transcript(self, case: Case, data: dict[str, Any], turn: PlannerTurn) -> None:
         """Put what the patient actually said into the record.

@@ -598,16 +598,27 @@ class VitaServices:
         if existing:
             return existing[0].as_dict()
 
-        urgency = case.effective_urgency or "not yet graded"
+        # Two sentences that have to read as sentences. Interpolating a
+        # fallback into "Currently graded {x}" produced "Currently graded not
+        # yet graded, intake still open."
+        if case.decision:
+            standing = (
+                f"Currently graded {case.effective_urgency}, "
+                f"routed to {case.decision.department}."
+            )
+        else:
+            standing = "Not graded yet - the intake conversation is still open."
+
+        asked = reason.strip()
+        if asked and not asked.endswith((".", "!", "?")):
+            asked += "."
+
         request = Request.create(
             case_id=case_id,
             patient_id=case.patient_id,
             kind=RequestKind.TALK_TO_CLINICIAN,
             summary=f"{case.patient_name or 'Patient'} asked to speak to someone",
-            reasoning=(
-                (reason.strip() + " ") if reason.strip() else ""
-            ) + f"Currently graded {urgency}"
-              + (f", routed to {case.decision.department}." if case.decision else ", intake still open."),
+            reasoning=f"{asked} {standing}".strip(),
             payload={"department": case.decision.department if case.decision else ""},
         )
         self.requests.add(request)

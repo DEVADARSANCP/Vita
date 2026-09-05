@@ -338,6 +338,8 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
     case.patient_gender = raw.get("patient_gender", "")
     case.past_history = raw.get("past_history", "")
     case.takes_medication = raw.get("takes_medication", "")
+    case.medications_declared = raw.get("medications_declared", "")
+    case.medication_duration = raw.get("medication_duration", "")
     case.synthetic = bool(raw.get("synthetic", False))
     case.pending_fact = raw.get("pending_fact", "")
     case.pending_rule = raw.get("pending_rule", "")

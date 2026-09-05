@@ -45,6 +45,8 @@ class StartCaseRequest(BaseModel):
     gender: str = Field(default="", max_length=32)
     past_history: str = Field(default="", max_length=600)
     takes_medication: str = Field(default="", max_length=8)
+    medications: str = Field(default="", max_length=600)
+    medication_duration: str = Field(default="", max_length=120)
 
 
 class MessageRequest(BaseModel):
@@ -150,6 +152,8 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             gender=body.gender,
             past_history=body.past_history,
             takes_medication=body.takes_medication,
+            medications=body.medications,
+            medication_duration=body.medication_duration,
         )
         return JSONResponse(
             {

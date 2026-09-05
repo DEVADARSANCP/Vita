@@ -131,6 +131,8 @@ class VitaServices:
         gender: str = "",
         past_history: str = "",
         takes_medication: str = "",
+        medications: str = "",
+        medication_duration: str = "",
         synthetic: bool = False,
     ) -> Case:
         """Open a case, with the details a desk would take before anything else.
@@ -150,6 +152,8 @@ class VitaServices:
             patient_gender=str(gender or "").strip(),
             past_history=str(past_history or "").strip(),
             takes_medication=str(takes_medication or "").strip(),
+            medications_declared=str(medications or "").strip(),
+            medication_duration=str(medication_duration or "").strip(),
         )
 
         self._seed_registration_facts(case, language)
@@ -160,6 +164,8 @@ class VitaServices:
             "case_opened",
             detail=f"patient={patient.name or 'anonymous'} language={language}",
         )
+        self._seed_declared_medications(case)
+
         if case.past_history:
             self.memory.remember(
                 patient_id=case.patient_id,
@@ -170,6 +176,51 @@ class VitaServices:
 
         logger.info("case %s opened for %s", case.case_id, patient.name or "anonymous")
         return case
+
+    def _seed_declared_medications(self, case: Case) -> None:
+        """Turn medications named at the desk into triage facts.
+
+        Through the same reference table the photograph path uses, and with no
+        model involved. A patient who can spell warfarin should not have to
+        photograph the box before IN-03 applies to them.
+        """
+        if not case.medications_declared:
+            return
+
+        reading = self.medications.from_text(case.medications_declared)
+        if reading.facts:
+            self.tools.call(
+                "record_facts",
+                {
+                    "case_id": case.case_id,
+                    "facts": [
+                        {
+                            "key": key,
+                            "value": value,
+                            "evidence": f"named at registration: {reading.attribution.get(key, '')}",
+                        }
+                        for key, value in reading.facts.items()
+                    ],
+                },
+            )
+            logger.info("case %s: registration medications established %s",
+                        case.case_id, ", ".join(reading.facts))
+
+        case.medication_photos.append(
+            {**reading.as_dict(), "source": "typed at registration"}
+        )
+
+        if case.patient_id:
+            self.memory.remember(
+                patient_id=case.patient_id,
+                case_id=case.case_id,
+                kind=KIND_FACT,
+                text=(
+                    f"{case.patient_name or 'Patient'} takes {case.medications_declared}"
+                    + (f" ({case.medication_duration})" if case.medication_duration else "")
+                    + "."
+                ),
+            )
 
     def _seed_registration_facts(self, case: Case, language: str) -> None:
         """Turn the registration form into facts the rule engine can use.
@@ -676,6 +727,8 @@ class VitaServices:
             "gender": case.patient_gender,
             "past_history": case.past_history,
             "takes_medication": case.takes_medication,
+            "medications_declared": case.medications_declared,
+            "medication_duration": case.medication_duration,
         }
 
         # Who the patient is told to see. Named so the closing message is

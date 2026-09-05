@@ -125,6 +125,12 @@ class Case:
     past_history: str = ""
     takes_medication: str = ""
 
+    #: What they said they take, and for how long. Free text - a patient writes
+    #: "the small white one for BP" as readily as a drug name, and both are
+    #: worth a clinician seeing even when the reference table recognises neither.
+    medications_declared: str = ""
+    medication_duration: str = ""
+
     language: str = "en"
     complaint: Complaint = Complaint.UNDETERMINED
     status: CaseStatus = CaseStatus.INTAKE
@@ -335,6 +341,8 @@ class Case:
             "patient_gender": self.patient_gender,
             "past_history": self.past_history,
             "takes_medication": self.takes_medication,
+            "medications_declared": self.medications_declared,
+            "medication_duration": self.medication_duration,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "language": self.language,

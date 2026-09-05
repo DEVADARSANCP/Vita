@@ -187,6 +187,37 @@ class MedicationReader:
         )
         return reading
 
+    def from_text(self, written: str) -> MedicationReading:
+        """Classify medication names the patient typed rather than photographed.
+
+        Same table, same rules, no model. Somebody who can spell warfarin should
+        not have to photograph the box to have IN-03 apply to them, and a name
+        typed at the desk is exactly as good a fact as one read off a strip.
+        """
+        reading = MedicationReading(readable=bool(written.strip()))
+        if not written.strip():
+            return reading
+
+        # Patients separate these however they like.
+        parts = [
+            token.strip()
+            for token in written.replace(";", ",").replace("\n", ",").split(",")
+            if token.strip()
+        ]
+
+        for raw in parts:
+            reading.names.append({"name_as_printed": raw, "generic_name": "", "strength": ""})
+            drug_class = self._classify(raw)
+            if not drug_class:
+                reading.unrecognised.append(raw)
+                continue
+            fact = self._class_facts.get(drug_class)
+            if fact and fact not in reading.facts:
+                reading.facts[fact] = "true"
+                reading.attribution[fact] = raw
+
+        return reading
+
     def _classify(self, name: str) -> str | None:
         """Look up a drug class. Exact match first, then a contained match.
 

@@ -34,6 +34,33 @@
 
   #begin { height: 42px; font-size: 14.5px; margin-top: 4px; }
 
+  /* Revealed once they say they take something. Asking these of everybody
+     would make the form twice as long for the people it does not apply to. */
+  .followup {
+    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 0 9px 9px 0; padding: 13px 14px; background: var(--panel-2);
+    display: grid; gap: 12px;
+  }
+  .followup .hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin: -3px 0 0; }
+
+  .drop {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px;
+    background: var(--panel);
+  }
+  .drop button { height: 34px; font-size: 13px; padding: 0 12px; }
+  .shots { display: flex; gap: 7px; flex-wrap: wrap; }
+  .shot { position: relative; }
+  .shot img {
+    width: 58px; height: 58px; object-fit: cover;
+    border-radius: 7px; border: 1px solid var(--line); display: block;
+  }
+  .shot button {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+    padding: 0; border-radius: 50%; font-size: 12px; line-height: 1;
+    background: var(--critical); border-color: var(--critical); color: #fff;
+  }
+
   .chat {
     display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0;
     /* The thread scrolls, not the page. Scrolling the page moved the composer
@@ -149,6 +176,28 @@
           </div>
         </div>
 
+        <div class="followup" id="meds-detail" hidden>
+          <div class="field" style="margin:0">
+            <label for="f-medlist">Which ones? <span class="opt">— as many as you remember</span></label>
+            <input type="text" id="f-medlist" placeholder="For example: Ecosprin, Acitrom, Metformin">
+            <p class="hint">Do not worry about spelling. If you are not sure, send a photo below instead.</p>
+          </div>
+
+          <div class="field" style="margin:0">
+            <label for="f-medsince">How long have you been taking them? <span class="opt">— roughly is fine</span></label>
+            <input type="text" id="f-medsince" placeholder="For example: about two years">
+          </div>
+
+          <div class="field" style="margin:0">
+            <label>Photo of the packet <span class="opt">— optional, and the easiest way</span></label>
+            <div class="drop">
+              <button type="button" id="add-shot">📷 Add a photo</button>
+              <span class="hint" id="shot-hint" style="margin:0">We will read the names off it for you.</span>
+            </div>
+            <div class="shots" id="shots" style="margin-top:9px"></div>
+          </div>
+        </div>
+
         <div class="field">
           <label for="f-lang">Language you would like to use</label>
           <select id="f-lang">
@@ -250,12 +299,64 @@ async function refreshMode() {
   } catch { $("mode").textContent = "unreachable"; }
 }
 
+/* The medication questions only appear for the people they apply to. Asking
+   everybody would double the length of the form for the majority who answer
+   "no" and walk straight past it. */
+let pendingShots = [];
+
+function setMedsAnswer(value) {
+  medsAnswer = value;
+  document.querySelectorAll("#f-meds button").forEach((x) =>
+    x.classList.toggle("on", x.dataset.v === value));
+  const show = value === "yes" || value === "unsure";
+  $("meds-detail").hidden = !show;
+  if (value === "unsure") {
+    $("shot-hint").textContent =
+      "If you have the packet with you, a photo is the easiest way - we will read it.";
+  }
+}
+
 for (const b of document.querySelectorAll("#f-meds button")) {
-  b.onclick = () => {
-    document.querySelectorAll("#f-meds button").forEach((x) => x.classList.remove("on"));
-    b.classList.add("on");
-    medsAnswer = b.dataset.v;
-  };
+  b.onclick = () => setMedsAnswer(b.dataset.v);
+}
+
+const shotPicker = el("input");
+shotPicker.type = "file";
+shotPicker.accept = "image/*";
+shotPicker.capture = "environment";
+shotPicker.multiple = true;
+shotPicker.hidden = true;
+document.body.append(shotPicker);
+
+$("add-shot").onclick = () => shotPicker.click();
+
+shotPicker.onchange = (e) => {
+  for (const file of e.target.files) {
+    if (pendingShots.length >= 4) break;
+    pendingShots.push(file);
+  }
+  e.target.value = "";
+  renderShots();
+};
+
+function renderShots() {
+  const host = $("shots");
+  host.replaceChildren();
+  pendingShots.forEach((file, i) => {
+    const wrap = el("div", "shot");
+    const img = el("img");
+    img.src = URL.createObjectURL(file);
+    img.alt = file.name;
+    const drop = el("button", null, "×");
+    drop.type = "button";
+    drop.title = "Remove";
+    drop.onclick = () => { pendingShots.splice(i, 1); renderShots(); };
+    wrap.append(img, drop);
+    host.append(wrap);
+  });
+  $("shot-hint").textContent = pendingShots.length
+    ? `${pendingShots.length} photo${pendingShots.length > 1 ? "s" : ""} ready.`
+    : "We will read the names off it for you.";
 }
 
 let shownTurns = 0;
@@ -303,6 +404,8 @@ async function beginIntake() {
         gender: $("f-gender").value,
         past_history: $("f-history").value.trim(),
         takes_medication: medsAnswer,
+        medications: $("f-medlist").value.trim(),
+        medication_duration: $("f-medsince").value.trim(),
       }),
     });
     caseId = started.case_id;
@@ -314,7 +417,12 @@ async function beginIntake() {
     const first = (started.patient_name || "").split(" ")[0];
     bubble("vita", `Thank you${first ? ", " + first : ""}. What brings you in today? Tell me in your own words.`);
 
-    $("photo-hint").hidden = medsAnswer !== "yes";
+    // Photos attached at registration go up now the case exists. Done after the
+    // greeting so the patient is never left looking at a blank screen while
+    // they upload.
+    if (pendingShots.length) uploadRegistrationShots();
+
+    $("photo-hint").hidden = true;
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       $("mic-btn").hidden = true;
       $("mic-hint").hidden = true;
@@ -371,6 +479,32 @@ $("input").addEventListener("input", (e) => {
   e.target.style.height = "auto";
   e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
 });
+
+/* ---------- photos attached at registration ---------- */
+
+async function uploadRegistrationShots() {
+  const shots = pendingShots.slice();
+  pendingShots = [];
+  const names = [];
+
+  for (const file of shots) {
+    try {
+      const form = new FormData();
+      form.append("photo", file);
+      const res = await fetch(`/api/cases/${caseId}/medication-photo`, { method: "POST", body: form });
+      if (!res.ok) continue;
+      const reading = (await res.json()).reading || {};
+      for (const m of reading.medications || []) {
+        const label = [m.name_as_printed, m.strength].filter(Boolean).join(" ");
+        if (label) names.push(label);
+      }
+    } catch { /* the conversation matters more than the upload */ }
+  }
+
+  if (names.length) {
+    bubble("vita", `I read ${names.join(", ")} from your photo${shots.length > 1 ? "s" : ""}. That is noted.`);
+  }
+}
 
 /* ---------- speaking instead of typing ----------
    Plenty of people at an intake desk cannot comfortably type - in pain, elderly,
@@ -643,7 +777,8 @@ const EXAMPLES = [
   { label: "Time-critical", name: "Suresh Nair", age: "58", gender: "Male", meds: "no",
     text: "I have crushing chest pain going down my left arm and I'm sweating", lang: "en" },
   { label: "Looks well, is not", name: "Mary Thomas", age: "71", gender: "Female", meds: "yes",
-    history: "Atrial fibrillation", text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin.", lang: "en" },
+    history: "Atrial fibrillation", medlist: "Warfarin",
+    text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin.", lang: "en" },
   { label: "Cannot answer", name: "John David", age: "45", gender: "Male", meds: "unsure",
     text: "my chest hurts", lang: "en" },
   { label: "Outside our scope", name: "Fatima Beevi", age: "63", gender: "Female", meds: "no",
@@ -663,9 +798,8 @@ function renderExamples() {
       $("f-gender").value = ex.gender;
       $("f-history").value = ex.history || "";
       $("f-lang").value = ex.lang;
-      medsAnswer = ex.meds;
-      document.querySelectorAll("#f-meds button").forEach((x) =>
-        x.classList.toggle("on", x.dataset.v === ex.meds));
+      setMedsAnswer(ex.meds);
+      $("f-medlist").value = ex.medlist || "";
       if (await beginIntake()) { $("input").value = ex.text; send(); }
     };
     grid.append(b);

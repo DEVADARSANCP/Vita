@@ -556,6 +556,16 @@ async function renderCase(d) {
     d.append(section("Rules applied", el("div", "muted small", "No rule matched.")));
   }
 
+  if (kase.medications_declared || kase.medication_duration) {
+    const box = el("div");
+    box.append(el("div", null, kase.medications_declared || "—"));
+    if (kase.medication_duration) {
+      box.append(el("div", "cond", `taking them ${kase.medication_duration}`));
+    }
+    box.append(el("div", "src", "given by the patient at registration"));
+    d.append(section("Medication the patient named", box));
+  }
+
   if ((kase.medication_photos || []).length) {
     const box = el("div");
     for (const ph of kase.medication_photos) {
@@ -571,7 +581,7 @@ async function renderCase(d) {
         box.append(el("div", "src", `read but not in the reference table: ${ph.unrecognised.join(", ")}`));
       }
     }
-    d.append(section("Medication read from a photo", box));
+    d.append(section("Medication identified", box));
   }
 
   d.append(section("Patient reported", list(note.patient_reported, null,

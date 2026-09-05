@@ -295,6 +295,7 @@ class TriagePlanner:
         red_flag_agent: Any = None,
         phraser: Any = None,
         book: Any = None,
+        retriever: Any = None,
     ) -> None:
         self.kb = kb
         self.llm = llm
@@ -305,6 +306,10 @@ class TriagePlanner:
         #: Injected rather than imported, so the planner needs to know nothing
         #: about how booking works.
         self.book = book
+        #: Used once per case, to ask whether the description is something this
+        #: rule set covers at all. Retrieval answering a safety question rather
+        #: than a citation one.
+        self.retriever = retriever
         self._pending_audio: tuple[bytes, str] | None = None
         self._pending_turn: Any = None
 
@@ -350,6 +355,7 @@ class TriagePlanner:
         # fire whether it was typed or said.
         if audio is None:
             self._red_flags(case, message, turn)
+            self._check_scope(case, message, turn)
         if case.out_of_scope or self._red_flag_ceiling(case).rank >= Urgency.HIGH.rank:
             return self._conclude(case, turn, impression="")
 
@@ -368,6 +374,36 @@ class TriagePlanner:
             return self._continue(case, message, turn)
 
         return self._plan(case, message, turn)
+
+    def _check_scope(self, case: Case, message: str, turn: PlannerTurn) -> None:
+        """Ask the corpus whether this is something VITA covers.
+
+        Nearest-class over labelled exemplars, run once per case on the opening
+        description. It is deliberately not the planner that answers this: the
+        model asked whether a case is within its own competence tends to say
+        yes, and the whole point of the question is to catch the cases where
+        that answer is wrong.
+
+        Two outcomes, and keeping them apart is the thing that matters. A
+        *confident* negative refuses - VITA does not triage a stroke against a
+        rule set that has no stroke in it. An uncertain one escalates and
+        carries on, because "I banged my head, I feel alright, but I take
+        warfarin" sits near the boundary and is a case IN-03 covers exactly.
+        Refusing it would be the worse error by a wide margin.
+        """
+        if self.retriever is None or case.scope_verdict or message == "(spoken)":
+            return
+
+        verdict = self.retriever.check_scope(message)
+        case.scope_verdict = verdict.as_dict()
+
+        if verdict.refuses:
+            case.out_of_scope = True
+            turn.notes.append(f"out of scope: {verdict.explain()}")
+            logger.info("case %s refused as out of scope (%s)", case.case_id, verdict.label)
+        elif verdict.needs_review:
+            case.scope_uncertain = True
+            turn.notes.append(f"scope uncertain: {verdict.explain()}")
 
     # -- the loop --------------------------------------------------------
 

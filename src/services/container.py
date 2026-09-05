@@ -88,6 +88,7 @@ class VitaServices:
         self.planner = TriagePlanner(
             self.kb, self.llm, self.mcp, self.red_flag_agent, self.phraser,
             book=self._book_if_waiting,
+            retriever=self.retriever,
         )
 
         self._live: dict[str, Case] = {}

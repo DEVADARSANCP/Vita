@@ -45,7 +45,7 @@ from ..config import SystemMode
 from ..core.case import Case, CaseStatus
 from ..core.knowledge import KnowledgeBase
 from ..core.rules import decide, infer_complaint
-from ..core.schema import Complaint, EscalationReason, Urgency
+from ..core.schema import Complaint, EscalationReason, Fact, FactSource, Tri, Urgency
 from ..llm.gemini import GeminiClient
 from ..mcp_bridge import McpBridge
 
@@ -290,12 +290,17 @@ class TriagePlanner:
         mcp: McpBridge,
         red_flag_agent: Any = None,
         phraser: Any = None,
+        book: Any = None,
     ) -> None:
         self.kb = kb
         self.llm = llm
         self.mcp = mcp
         self.red_flag_agent = red_flag_agent
         self.phraser = phraser
+        #: Called at closure to reserve a slot for a patient who is waiting.
+        #: Injected rather than imported, so the planner needs to know nothing
+        #: about how booking works.
+        self.book = book
         self._pending_audio: tuple[bytes, str] | None = None
         self._pending_turn: Any = None
 
@@ -390,6 +395,7 @@ class TriagePlanner:
                 case.language = language
 
             self._record(case, data.get("facts") or [], turn)
+            self._backstop_plain_answer(case, message, turn)
             self._note_working_impression(case, data)
 
             requested = data.get("tool_calls") or []
@@ -718,6 +724,44 @@ class TriagePlanner:
         self._pending_turn.text = "(nothing I could make out)"
         turn.transcript = ""
 
+    def _backstop_plain_answer(self, case: Case, message: str, turn: PlannerTurn) -> None:
+        """Record a plain yes or no the model failed to pick up.
+
+        VITA asked a direct question, the patient answered it in one word, and
+        the extraction came back without it. That leaves the rule open, and an
+        unresolved high-urgency rule raises the floor - so a mild fever whose
+        immunosuppression question was answered "no" is graded HIGH and sent
+        through instead of being given an appointment.
+
+        A one-word yes or no to a question we posed is not a judgement call and
+        does not need a model to be reliable.
+        """
+        fact = case.pending_fact
+        if not fact:
+            return
+        existing = case.facts.get(fact)
+        if existing is not None and existing.is_known:
+            return
+
+        answer = _plain_answer(message)
+        if answer is Tri.UNKNOWN:
+            return
+
+        case.record(
+            Fact(
+                key=fact,
+                value=answer,
+                source=FactSource.FOLLOWUP_ANSWER,
+                turn=case.turn_number,
+                verbatim=message,
+                language=case.language,
+                confidence=0.95,
+                agent="backstop",
+            )
+        )
+        turn.facts_recorded.append(fact)
+        logger.info("backstop recorded %s=%s from a one-word answer", fact, answer.value)
+
     def _note_working_impression(self, case: Case, data: dict[str, Any]) -> None:
         """Keep the running impression current.
 
@@ -844,7 +888,11 @@ class TriagePlanner:
         )
         case.pending_fact = ""
 
-        reply = self._closing_message(case)
+        # Booked before the closing line is written, so it can name the time
+        # and the token rather than telling the patient to ask at a desk.
+        booked = self.book(case) if self.book is not None else None
+
+        reply = self._closing_message(case, booked)
         case.add_vita_turn(reply)
 
         last_patient = next(
@@ -857,7 +905,7 @@ class TriagePlanner:
         turn.mode = self.llm.mode
         return turn
 
-    def _closing_message(self, case: Case) -> str:
+    def _closing_message(self, case: Case, appointment: Any = None) -> str:
         """What the patient is told at the end.
 
         Says where they are going and what happens next. Never names a condition
@@ -873,7 +921,32 @@ class TriagePlanner:
             case.decision.requires_human_review,
             case.language,
             out_of_scope=case.out_of_scope,
+            appointment=appointment,
         )
+
+
+_YES = {
+    "yes", "yeah", "yep", "yea", "ya", "aye", "correct", "true", "i do", "i am",
+    "definitely", "sure", "അതെ", "ഉണ്ട്", "हाँ", "हां", "जी हाँ",
+}
+_NO = {
+    "no", "nope", "nah", "none", "negative", "i don't", "i dont", "i do not",
+    "i am not", "no i haven't", "never", "ഇല്ല", "അല്ല", "नहीं", "ना",
+}
+
+
+def _plain_answer(message: str) -> Tri:
+    """Read an unambiguous yes or no, or give up.
+
+    Only a message that is essentially just the word counts. "no" appears inside
+    "not sure" and "I don't know", both of which mean the opposite of an answer.
+    """
+    token = message.strip().lower().strip(".!,")
+    if token in _YES:
+        return Tri.TRUE
+    if token in _NO:
+        return Tri.FALSE
+    return Tri.UNKNOWN
 
 
 def _pretty(value: Any) -> str:

@@ -18,11 +18,12 @@ Three layers, in order of preference:
   nothing. A question the patient may have to puzzle over still beats a
   conversation that stops.
 
-The closing message is deliberately careful. It reports an urgency and a
-department and says a clinician will review. It never names a condition, never
-reassures, and never tells a patient they are fine - VITA does not know that,
-and a triage assistant that offers comfort it cannot support is doing the one
-thing this system is built not to do.
+The closing message comes in two shapes. Somebody urgent is told to go through
+now. Somebody who is waiting is told when, with whom, and what token they hold -
+because "go to General Medicine" leaves a patient standing in a corridor working
+out what to do next. Neither version names a condition, reassures, or tells a
+patient they are fine: VITA does not know that, and a triage assistant offering
+comfort it cannot support is doing the one thing this system is built not to do.
 """
 
 from __future__ import annotations
@@ -73,6 +74,21 @@ _MESSAGES: dict[str, dict[str, str]] = {
             "आपने जो बताया है वह मेरे आकलन के दायरे से बाहर है। "
             "मैंने आपका मामला एक चिकित्सक को भेज दिया है।"
         ),
+    },
+    "sent_now": {
+        "en": "We are taking you through to {department} now. Please go there straight away and tell the staff you have arrived.",
+        "ml": "\u0d1e\u0d19\u0d4d\u0d19\u0d7e \u0d28\u0d3f\u0d19\u0d4d\u0d19\u0d33\u0d46 \u0d07\u0d2a\u0d4d\u0d2a\u0d4b\u0d7e {department} \u0d35\u0d3f\u0d2d\u0d3e\u0d17\u0d24\u0d4d\u0d24\u0d3f\u0d32\u0d47\u0d15\u0d4d\u0d15\u0d4d \u0d15\u0d4a\u0d23\u0d4d\u0d1f\u0d41\u0d2a\u0d4b\u0d15\u0d41\u0d28\u0d4d\u0d28\u0d41. \u0d09\u0d1f\u0d28\u0d46 \u0d05\u0d35\u0d3f\u0d1f\u0d46 \u0d2a\u0d4b\u0d15\u0d41\u0d15.",
+        "hi": "\u0939\u092e \u0906\u092a\u0915\u094b \u0905\u092d\u0940 {department} \u092d\u0947\u091c \u0930\u0939\u0947 \u0939\u0948\u0902\u0964 \u0915\u0943\u092a\u092f\u093e \u0924\u0941\u0930\u0902\u0924 \u0935\u0939\u093e\u0901 \u091c\u093e\u090f\u0901\u0964",
+    },
+    "booked": {
+        "en": "I have booked you in to see {doctor} {when}. Your token number is {token}.",
+        "ml": "{when} {doctor}-\u0d28\u0d46 \u0d15\u0d3e\u0d23\u0d3e\u0d7b \u0d1e\u0d3e\u0d7b \u0d2c\u0d41\u0d15\u0d4d\u0d15\u0d4d \u0d1a\u0d46\u0d2f\u0d4d\u0d24\u0d41. \u0d1f\u0d4b\u0d15\u0d4d\u0d15\u0d7a \u0d28\u0d2e\u0d4d\u0d2a\u0d7c {token}.",
+        "hi": "\u092e\u0948\u0902\u0928\u0947 \u0906\u092a\u0915\u094b {when} {doctor} \u0938\u0947 \u092e\u093f\u0932\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u092c\u0941\u0915 \u0915\u0930 \u0926\u093f\u092f\u093e \u0939\u0948\u0964 \u0906\u092a\u0915\u093e \u091f\u094b\u0915\u0928 \u0928\u0902\u092c\u0930 {token} \u0939\u0948\u0964",
+    },
+    "report_sent": {
+        "en": "Your details have gone to the doctor and the hospital has been told to expect you. If anything changes, the hospital will update your booking.",
+        "ml": "\u0d28\u0d3f\u0d19\u0d4d\u0d19\u0d33\u0d41\u0d1f\u0d46 \u0d35\u0d3f\u0d35\u0d30\u0d19\u0d4d\u0d19\u0d7e \u0d21\u0d4b\u0d15\u0d4d\u0d1f\u0d7c\u0d15\u0d4d\u0d15\u0d4d \u0d05\u0d2f\u0d1a\u0d4d\u0d1a\u0d41. \u0d2e\u0d3e\u0d31\u0d4d\u0d31\u0d2e\u0d41\u0d23\u0d4d\u0d1f\u0d46\u0d19\u0d4d\u0d15\u0d3f\u0d7d \u0d06\u0d36\u0d41\u0d2a\u0d24\u0d4d\u0d30\u0d3f \u0d05\u0d31\u0d3f\u0d2f\u0d3f\u0d15\u0d4d\u0d15\u0d41\u0d02.",
+        "hi": "\u0906\u092a\u0915\u093e \u0935\u093f\u0935\u0930\u0923 \u0921\u0949\u0915\u094d\u091f\u0930 \u0915\u094b \u092d\u0947\u091c \u0926\u093f\u092f\u093e \u0917\u092f\u093e \u0939\u0948\u0964 \u0915\u0941\u091b \u092c\u0926\u0932\u0924\u093e \u0939\u0948 \u0924\u094b \u0905\u0938\u094d\u092a\u0924\u093e\u0932 \u0906\u092a\u0915\u094b \u092c\u0924\u093e\u090f\u0917\u093e\u0964",
     },
     "routed": {
         "en": "I have recorded your details and routed you to {department}.",
@@ -158,20 +174,38 @@ class Phraser:
         language: str,
         *,
         out_of_scope: bool = False,
+        appointment: Any = None,
     ) -> str:
         """The closing message.
 
-        Reports what was decided and what happens next. Never names a condition,
-        never reassures, and never tells the patient they are fine.
+        There are two of these and the difference is the point. Somebody urgent
+        is told to go now. Somebody who is waiting is told when, with whom, and
+        what number they are - because "go to General Medicine" leaves a patient
+        standing in a corridor working out what to do next.
+
+        Neither version names a condition, reassures, or tells anybody they are
+        fine.
         """
         if out_of_scope:
             return self.say("out_of_scope", language)
 
-        parts = [self.say("routed", language, department=department)]
-
         if urgency in (Urgency.HIGH, Urgency.CRITICAL):
-            parts.append(self.say("seek_immediate", language))
+            parts = [self.say("sent_now", language, department=department)]
+            if requires_review:
+                parts.append(self.say("review_required", language))
+            return " ".join(p for p in parts if p)
+
+        if appointment is not None:
+            parts = [
+                self.say("booked", language, doctor=appointment.doctor_name,
+                         when=appointment.when, token=appointment.token),
+                self.say("report_sent", language),
+            ]
+            if requires_review:
+                parts.append(self.say("review_required", language))
+            return " ".join(p for p in parts if p)
+
+        parts = [self.say("routed", language, department=department)]
         if requires_review:
             parts.append(self.say("review_required", language))
-
         return " ".join(p for p in parts if p)

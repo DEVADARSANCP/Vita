@@ -73,6 +73,12 @@ class Doctor:
     phone: str = ""
     email_env: str = ""
 
+    #: When they are in clinic, and how long a slot is. An appointment time
+    #: drawn from anything else is a number, not a time somebody is present.
+    clinic_start: str = "09:00"
+    clinic_end: str = "17:00"
+    slot_minutes: int = 15
+
     @property
     def address(self) -> str:
         """The address to notify, preferring the environment over the file.
@@ -101,6 +107,8 @@ class Doctor:
             "email": self.address,
             "phone": self.phone,
             "configured": self.address_is_real,
+            "clinic": f"{self.clinic_start}-{self.clinic_end}",
+            "slot_minutes": self.slot_minutes,
         }
 
 

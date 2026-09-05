@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "note": "Synthetic hospital operations data for demonstration. No real people, no real rosters. Capacity is shown to clinicians alongside the queue and is NEVER an input to the triage decision - a HIGH case stays HIGH when Emergency is full, and what changes is what the clinician is told, not what the patient is graded. Doctor email addresses are read from the environment (VITA_DOCTOR_EYE, VITA_DOCTOR_GENERAL) so no real address is ever committed.",
+  "note": "Synthetic hospital operations data for demonstration. No real people, no real rosters. Capacity is shown to clinicians alongside the queue and is NEVER an input to the triage decision - a HIGH case stays HIGH when Emergency is full, and what changes is what the clinician is told, not what the patient is graded. Clinic hours are what appointment times are drawn from, so a booked slot is a time the clinician is actually present rather than a number the system invented. Doctor email addresses are read from the environment (VITA_DOCTOR_EYE, VITA_DOCTOR_GENERAL) so no real address is ever committed.",
   "facility": {
     "name": "Vita General Hospital",
     "city": "Kochi",
@@ -81,7 +81,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000101"
+      "phone": "+91-484-0000101",
+      "clinic_start": "09:00",
+      "clinic_end": "17:00",
+      "slot_minutes": 15
     },
     {
       "id": "D-102",
@@ -91,7 +94,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_EYE",
       "email": "ophthalmology@vita-demo.invalid",
-      "phone": "+91-484-0000102"
+      "phone": "+91-484-0000102",
+      "clinic_start": "09:00",
+      "clinic_end": "16:00",
+      "slot_minutes": 20
     },
     {
       "id": "D-103",
@@ -101,7 +107,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000103"
+      "phone": "+91-484-0000103",
+      "clinic_start": "00:00",
+      "clinic_end": "23:59",
+      "slot_minutes": 10
     },
     {
       "id": "D-104",
@@ -110,7 +119,10 @@
       "department": "Emergency",
       "on_call": false,
       "email": "",
-      "phone": "+91-484-0000104"
+      "phone": "+91-484-0000104",
+      "clinic_start": "00:00",
+      "clinic_end": "23:59",
+      "slot_minutes": 10
     },
     {
       "id": "D-105",
@@ -120,7 +132,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000105"
+      "phone": "+91-484-0000105",
+      "clinic_start": "10:00",
+      "clinic_end": "16:00",
+      "slot_minutes": 20
     },
     {
       "id": "D-106",
@@ -130,7 +145,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000106"
+      "phone": "+91-484-0000106",
+      "clinic_start": "09:00",
+      "clinic_end": "17:00",
+      "slot_minutes": 20
     },
     {
       "id": "D-107",
@@ -140,7 +158,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000107"
+      "phone": "+91-484-0000107",
+      "clinic_start": "09:00",
+      "clinic_end": "15:00",
+      "slot_minutes": 20
     },
     {
       "id": "D-108",
@@ -150,7 +171,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000108"
+      "phone": "+91-484-0000108",
+      "clinic_start": "08:00",
+      "clinic_end": "18:00",
+      "slot_minutes": 20
     },
     {
       "id": "D-109",
@@ -160,7 +184,10 @@
       "on_call": true,
       "email_env": "VITA_DOCTOR_GENERAL",
       "email": "general.medicine@vita-demo.invalid",
-      "phone": "+91-484-0000109"
+      "phone": "+91-484-0000109",
+      "clinic_start": "00:00",
+      "clinic_end": "23:59",
+      "slot_minutes": 10
     }
   ],
   "rooms": [

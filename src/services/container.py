@@ -39,6 +39,7 @@ from ..store.hospital import HospitalDirectory
 from ..store.requests import RequestStore
 from ..tools import ToolLayer
 from .ambulance import AmbulanceError, AmbulanceService
+from .appointments import AppointmentBook
 from .injury import InjuryReader
 from .medication import MedicationReader
 from .voice import VoiceListener
@@ -70,6 +71,7 @@ class VitaServices:
         self.cases = CaseStore()
         self.requests = RequestStore()
         self.hospital = HospitalDirectory()
+        self.appointments = AppointmentBook(self.hospital)
         self.notifier = Notifier()
         self.ambulance = AmbulanceService()
         self.medications = MedicationReader(self.llm)
@@ -84,7 +86,8 @@ class VitaServices:
         self.tools = ToolLayer(self)
         self.mcp = McpBridge(self._build_mcp_server)
         self.planner = TriagePlanner(
-            self.kb, self.llm, self.mcp, self.red_flag_agent, self.phraser
+            self.kb, self.llm, self.mcp, self.red_flag_agent, self.phraser,
+            book=self._book_if_waiting,
         )
 
         self._live: dict[str, Case] = {}
@@ -490,6 +493,42 @@ class VitaServices:
                     )
                 )
 
+    def _book_if_waiting(self, case: Case) -> Any:
+        """Give a waiting patient a time, a name and a number.
+
+        Only for patients who are waiting. Anyone HIGH or above is walking
+        through now, and handing them a slot at half past two would read as an
+        instruction to sit down - the opposite of what their grading means.
+        """
+        decision = case.decision
+        if decision is None or case.synthetic:
+            return None
+        if not self.appointments.should_book(case.effective_urgency):
+            return None
+
+        booked = self.appointments.book(
+            case_id=case.case_id,
+            patient_id=case.patient_id,
+            patient_name=case.patient_name,
+            department=decision.department,
+            urgency=case.effective_urgency,
+        )
+        if booked is None:
+            return None
+
+        self.cases.audit(
+            case.case_id, "appointment_booked",
+            detail=f"{booked.doctor_name} {booked.when}, token {booked.token}",
+        )
+        if case.patient_id:
+            self.memory.remember(
+                patient_id=case.patient_id,
+                case_id=case.case_id,
+                kind=KIND_VISIT,
+                text=f"Booked with {booked.doctor_name} {booked.when} (token {booked.token}).",
+            )
+        return booked
+
     def _remember(self, case: Case) -> None:
         """Write the few things worth recalling at this patient's next visit."""
         if not case.patient_id or case.synthetic or case.decision is None:
@@ -748,6 +787,9 @@ class VitaServices:
 
         from datetime import datetime, timezone
 
+        if not self.appointments.should_book(level.value):
+            self.appointments.cancel_for_case(case.case_id, f"urgency raised by {by}")
+
         case.override_urgency = level.value
         case.override_reason = reason
         case.override_by = by
@@ -760,6 +802,7 @@ class VitaServices:
             case.case_id, "clinician_override", actor=by,
             detail=f"{case.decision.urgency.value if case.decision else '?'} -> {level.value}: {reason}",
         )
+        self._book_if_waiting(case)
         return case
 
     def mark_reviewed(self, case_id: str, by: str) -> Case | None:
@@ -807,6 +850,9 @@ class VitaServices:
         doctor = self.hospital.on_call_for(
             case.decision.department if case.decision else ""
         )
+        booked = self.appointments.for_case(case_id)
+        note["appointment"] = booked[0].as_dict() if booked else None
+
         note["assigned_doctor"] = (
             {"name": doctor.name, "department": doctor.department, "specialty": doctor.specialty}
             if doctor

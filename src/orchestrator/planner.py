@@ -56,11 +56,13 @@ logger = logging.getLogger(__name__)
 MIN_QUESTIONS = 3
 
 #: Consecutive turns the triage state must be unchanged before the intake is
-#: treated as converged.
-STABLE_TURNS = 2
+#: treated as converged. Two identical readings is enough - a third costs the
+#: patient another question to learn something already known twice over.
+STABLE_TURNS = 1
 
-#: Hard ceiling. A conversation that has not converged by here is not going to.
-MAX_TURNS = 12
+#: Hard ceiling. A conversation that has not converged by here is not going to,
+#: and a triage desk that asks a dozen questions has stopped being triage.
+MAX_TURNS = 8
 
 #: How many rounds of tool calls the planner may make within a single turn
 #: before it must produce something for the patient. Prevents a loop from
@@ -104,6 +106,12 @@ This is the fastest way to sound like a machine, and it is the thing patients ha
 - The open questions list marks anything you have already asked. Treat those as spent.
 - When you conclude you MUST write a clinical_impression. A conclusion without one is incomplete.
 - If this patient keeps returning with the same unresolved problem, or is deteriorating between visits, say so and use request_admission.
+
+WHEN TO STOP
+Triage decides how urgently somebody is seen and by which department. It is not a consultation, and it is not your job to build a complete picture - the clinician does that with the patient in front of them.
+- Once a HIGH or CRITICAL rule has matched and the case is already going for review, more questions will almost never change where this patient goes. Conclude.
+- Ask yourself before every question: if they answer either way, does the department or the urgency change? If not, do not ask it.
+- Three or four good questions is a normal intake. Eight is an interrogation, and somebody in pain is answering them.
 
 WHAT YOU DO NOT DO
 - You do not tell the patient what is wrong with them. No condition names, no reassurance, no "it is probably nothing". You are collecting information, not consulting.
@@ -611,6 +619,29 @@ class TriagePlanner:
         if text:
             case.working_impression = text
             case.working_impression_turn = case.turn_number
+
+    def _settled(self, case: Case) -> str:
+        """Is the disposition already fixed?
+
+        Once a high-urgency rule has matched and the case is going to a human
+        anyway, the department and the urgency are decided. Everything after
+        that is detail the clinician will gather better in person, and asking
+        for it keeps somebody in pain answering questions for no benefit.
+        """
+        decision = decide(
+            self.kb.rules_for(case.complaint),
+            case.facts,
+            complaint=case.complaint,
+            contradictions=case.contradictions,
+            final=False,
+        )
+        if decision.urgency.rank < Urgency.HIGH.rank or not decision.cited_rules:
+            return ""
+        return (
+            f"{', '.join(decision.cited_rules)} already matched, so this is "
+            f"{decision.urgency.value} for {decision.department} and a clinician "
+            "will review it."
+        )
 
     def _current_fingerprint(self, case: Case) -> str:
         decision = decide(

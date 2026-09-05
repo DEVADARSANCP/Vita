@@ -45,7 +45,10 @@
     text-transform: uppercase; color: var(--muted); font-weight: 650;
   }
 
-  .convo { display: flex; flex-direction: column; gap: 9px; }
+  .convo {
+    display: flex; flex-direction: column; gap: 9px;
+    max-height: 56vh; overflow-y: auto; padding-right: 4px;
+  }
   .turn { display: flex; }
   .turn.patient { justify-content: flex-end; }
   .turn .bub { max-width: 84%; padding: 8px 11px; border-radius: 11px; font-size: 13.5px; line-height: 1.5; }
@@ -138,6 +141,11 @@
 <div class="topbar">
   <div class="brand">VITA <small>Hospital Dashboard</small></div>
   <div class="spacer"></div>
+  <label class="tiny muted" for="whoami" style="display:flex;align-items:center;gap:6px">
+    Signed in as
+    <input type="text" id="whoami" placeholder="Your name"
+           style="width:150px;padding:4px 8px;font-size:12.5px">
+  </label>
   <span class="tiny muted" id="notify-state"></span>
   <span class="mode" id="mode">…</span>
   <a class="navlink" href="/reasoning">Case reasoning</a>
@@ -237,6 +245,32 @@ function list(items, cls, emptyText) {
   for (const i of items) ul.append(el("li", null, i));
   return ul;
 }
+
+/* Who is doing this. Every override, approval and message is attributed, and
+   an audit trail full of "Dr. on duty" tells nobody anything. Kept in the
+   browser so it survives a reload without needing accounts. */
+const WHO_KEY = "vita.clinician";
+
+function whoAmI() {
+  return ($("whoami").value || "").trim();
+}
+
+function requireName() {
+  const name = whoAmI();
+  if (name) return name;
+  $("whoami").focus();
+  $("whoami").style.borderColor = "var(--critical)";
+  setTimeout(() => { $("whoami").style.borderColor = ""; }, 1600);
+  alert("Please put your name in the top bar first, so this is recorded against you.");
+  return "";
+}
+
+try {
+  $("whoami").value = localStorage.getItem(WHO_KEY) || "";
+} catch { /* private browsing */ }
+$("whoami").addEventListener("change", () => {
+  try { localStorage.setItem(WHO_KEY, whoAmI()); } catch {}
+});
 
 async function refreshStatus() {
   try {
@@ -370,12 +404,14 @@ function requestCard(r) {
   const no = el("button", null, "Reject");
 
   const decide = async (approved) => {
+    const by = requireName();
+    if (!by) return;
     yes.disabled = no.disabled = true;
     try {
       await api("/api/requests/" + r.request_id + "/decide", {
         method: "POST",
         body: JSON.stringify({
-          approved, by: "Dr. on duty", note: note.value.trim(),
+          approved, by, note: note.value.trim(),
           room_id: roomPicker ? roomPicker.value : "",
         }),
       });
@@ -573,23 +609,32 @@ async function renderCase(d) {
   reason.style.cssText = "flex:1;min-width:150px";
   const apply = el("button", "primary", "Override");
   apply.onclick = async () => {
+    const by = requireName();
+    if (!by) return;
     if (!reason.value.trim()) { alert("An override needs a reason."); return; }
     apply.disabled = true;
     try {
       await api(`/api/cases/${selected}/override`, {
         method: "POST",
-        body: JSON.stringify({ urgency: sel.value, reason: reason.value.trim(), by: "Dr. on duty" }),
+        body: JSON.stringify({ urgency: sel.value, reason: reason.value.trim(), by }),
       });
       cachedNote = null; await refreshQueue(); await renderDetail();
     } catch (err) { alert(err.message); } finally { apply.disabled = false; }
   };
   const done = el("button", null, "Mark reviewed");
   done.onclick = async () => {
-    await api(`/api/cases/${selected}/review`, { method: "POST", body: JSON.stringify({ by: "Dr. on duty" }) });
+    const by = requireName();
+    if (!by) return;
+    await api(`/api/cases/${selected}/review`, { method: "POST", body: JSON.stringify({ by }) });
     cachedNote = null; await refreshQueue(); await renderDetail();
   };
   actions.append(sel, reason, apply, done);
   d.append(section("Clinician action", actions));
+  const attributed = el("div", "tiny muted");
+  attributed.style.marginTop = "6px";
+  attributed.textContent =
+    "Recorded against the name in the top bar, and kept alongside what the system recommended.";
+  d.append(attributed);
 
   if (kase.override && kase.override.urgency) {
     d.append(el("div", "banner info",
@@ -629,6 +674,7 @@ async function renderConvo(d) {
     }
   }
   d.append(box);
+  box.scrollTop = box.scrollHeight;
 
   // Talk to the patient directly. It lands in the chat they are already
   // reading, so they have one conversation rather than two.
@@ -640,11 +686,13 @@ async function renderConvo(d) {
   const doSend = async () => {
     const text = input.value.trim();
     if (!text) return;
+    const author = requireName();
+    if (!author) return;
     send.disabled = true;
     try {
       await api(`/api/cases/${selected}/staff-message`, {
         method: "POST",
-        body: JSON.stringify({ text, author: "Hospital desk" }),
+        body: JSON.stringify({ text, author }),
       });
       input.value = "";
       cachedNote = null;

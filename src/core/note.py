@@ -84,7 +84,29 @@ def build_note(case: Case, kb: KnowledgeBase) -> dict[str, Any]:
     """
     decision = case.decision
     if decision is None:
-        return {"case_id": case.case_id, "status": "incomplete", "sections": {}}
+        # Same keys, empty values. An incomplete note used to return a handful
+        # of fields, so every caller had to guess which of them existed - and a
+        # missing key reads as a bug rather than as "not finished yet".
+        return {
+            "case_id": case.case_id,
+            "status": "incomplete",
+            "generated_at": case.updated_at,
+            "complaint": case.complaint.value,
+            "language": case.language,
+            "recommendation": None,
+            "override": None,
+            "reasoning": [],
+            "patient_reported": [_label(f) for f in sorted(case.reported(), key=lambda f: f.key)],
+            "established_by_followup": [],
+            "recalled_from_records": [],
+            "unknown": [],
+            "unresolved_rules": [],
+            "contradictions": [c.describe() for c in case.contradictions],
+            "red_flags": [f.as_dict() for f in kb.red_flags if f.id in case.red_flags],
+            "escalation": {"required": False, "reasons": [], "notes": []},
+            "system_mode": case.decided_in_mode.value,
+            "disclaimer": kb.disclaimer,
+        }
 
     reasoning = [
         {

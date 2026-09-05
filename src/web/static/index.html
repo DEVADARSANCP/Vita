@@ -23,7 +23,13 @@
   .choice button { flex: 1; padding: 9px; font-size: 14px; }
   .choice button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  .chat { display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0; }
+  .chat {
+    display: flex; flex-direction: column; gap: 13px; margin: 4px 0 0;
+    /* The thread scrolls, not the page. Scrolling the page moved the composer
+       off screen on every send, which meant scrolling back down to type. */
+    max-height: 54vh; overflow-y: auto; scroll-behavior: smooth;
+    padding-right: 4px;
+  }
   .msg { display: flex; }
   .msg.patient { justify-content: flex-end; }
   .bubble { max-width: 82%; padding: 11px 14px; border-radius: 13px; line-height: 1.55; }
@@ -234,9 +240,10 @@ function bubble(role, text, author) {
   if (role === "staff") box.append(el("span", "from", author || "Hospital"));
   box.append(document.createTextNode(text));
   row.append(box);
-  $("chat").append(row);
+  const chat = $("chat");
+  chat.append(row);
   shownTurns += 1;
-  row.scrollIntoView({ behavior: "smooth", block: "end" });
+  chat.scrollTop = chat.scrollHeight;
 }
 
 /* Somebody at the hospital can type into this conversation. Poll for it, so

@@ -254,7 +254,7 @@ async function show(caseId) {
       if (t.vita_asked) {
         const asked = el("div", "asked");
         asked.style.marginTop = "8px";
-        asked.append(el("div", "who", t.concluded ? "VITA closed with" : "VITA then asked"),
+        asked.append(el("div", "who", t.concluded ? "VITA closed with" : "VITA replied"),
                      document.createTextNode(t.vita_asked));
         body.append(asked);
       }

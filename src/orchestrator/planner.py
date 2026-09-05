@@ -818,29 +818,6 @@ class TriagePlanner:
             case.working_impression = text
             case.working_impression_turn = case.turn_number
 
-    def _settled(self, case: Case) -> str:
-        """Is the disposition already fixed?
-
-        Once a high-urgency rule has matched and the case is going to a human
-        anyway, the department and the urgency are decided. Everything after
-        that is detail the clinician will gather better in person, and asking
-        for it keeps somebody in pain answering questions for no benefit.
-        """
-        decision = decide(
-            self.kb.rules_for(case.complaint),
-            case.facts,
-            complaint=case.complaint,
-            contradictions=case.contradictions,
-            final=False,
-        )
-        if decision.urgency.rank < Urgency.HIGH.rank or not decision.cited_rules:
-            return ""
-        return (
-            f"{', '.join(decision.cited_rules)} already matched, so this is "
-            f"{decision.urgency.value} for {decision.department} and a clinician "
-            "will review it."
-        )
-
     def _current_fingerprint(self, case: Case) -> str:
         decision = decide(
             self.kb.rules_for(case.complaint),

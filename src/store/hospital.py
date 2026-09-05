@@ -184,9 +184,6 @@ class HospitalDirectory:
             return anyone[0]
         return None
 
-    def on_call_doctors(self) -> list[Doctor]:
-        return [d for d in self.doctors if d.on_call]
-
     def routing_note(self, department: str) -> str:
         """One line of operational context for the clinician reading the case."""
         dept = self.department(department)

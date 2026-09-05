@@ -417,10 +417,6 @@ class TriageDecision:
     def cited_rules(self) -> list[str]:
         return [e.rule.rule_id for e in self.matched]
 
-    @property
-    def is_escalated(self) -> bool:
-        return self.requires_human_review
-
     def as_dict(self) -> dict[str, Any]:
         return {
             "urgency": self.urgency.value,

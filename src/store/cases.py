@@ -241,37 +241,6 @@ class CaseStore:
         counts["total"] = total["n"] if total else 0
         return counts
 
-    def find_prior_visit(self, *, complaint: str, within_hours: int, exclude: str) -> dict[str, Any] | None:
-        """Look for an earlier visit with the same complaint.
-
-        This is what makes rule GEN-07 possible: a patient returning inside 72
-        hours with an unresolved complaint is a recognised marker of a missed or
-        deteriorating condition, and it can only be spotted by something with a
-        memory across visits.
-        """
-        with self._lock:
-            rows = self._conn.execute(
-                """
-                SELECT case_id, created_at, urgency, department FROM cases
-                WHERE complaint = ? AND case_id <> ? AND synthetic = 0
-                ORDER BY created_at DESC LIMIT 5
-                """,
-                (complaint, exclude),
-            ).fetchall()
-
-        now = datetime.now(timezone.utc)
-        for row in rows:
-            try:
-                seen = datetime.fromisoformat(row["created_at"])
-            except ValueError:
-                continue
-            if seen.tzinfo is None:
-                seen = seen.replace(tzinfo=timezone.utc)
-            hours = (now - seen).total_seconds() / 3600.0
-            if 0 <= hours <= within_hours:
-                return {**dict(row), "hours_ago": round(hours, 1)}
-        return None
-
 
 # ---------------------------------------------------------------------------
 # Rehydration

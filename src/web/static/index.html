@@ -100,6 +100,20 @@
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
   .heard { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
 
+  /* A person has joined. Marked clearly, because "your message went to a human"
+     is the one thing the patient asked for and cannot otherwise tell. */
+  .handover {
+    margin: 12px 0; padding: 9px 12px; border-radius: 10px;
+    background: var(--accent-soft, rgba(20,140,110,.10));
+    border: 1px solid var(--accent); color: var(--ink);
+    font-size: 12.5px; line-height: 1.45;
+  }
+  .msg.staff .bubble { border-color: var(--accent); }
+  .msg.staff .from {
+    display: block; font-size: 11px; font-weight: 650;
+    color: var(--accent); margin-bottom: 3px;
+  }
+
   /* While recording. A red button says the browser is recording; it does not
      say the microphone can hear anything, and those are different failures.
      The meter moves with the actual signal, so silence looks like silence. */
@@ -394,18 +408,50 @@ function bubble(role, text, author) {
 
 /* Somebody at the hospital can type into this conversation. Poll for it, so
    their message arrives while the patient is sitting there rather than only
-   after the patient happens to send something. */
+   after the patient happens to send something.
+
+   Staff turns are tracked by the index the server gives them, not by how many
+   bubbles this page has drawn. Counting bubbles was the bug: the page renders
+   several things the server never records as turns - the opening line, a photo
+   confirmation, an error - so the count ran ahead, `since` skipped past the
+   staff message, and a patient who had asked to speak to someone sat watching
+   a reply that had already been sent. */
+const shownStaff = new Set();
+let staffJoined = false;
+
 async function pollForStaff() {
   if (!caseId) return;
   try {
-    const d = await api(`/api/cases/${caseId}/conversation?since=${shownTurns}`);
-    for (const t of d.turns) {
-      if (t.role === "staff") bubble("staff", t.text, t.author);
-      else shownTurns += 1;
+    const d = await api(`/api/cases/${caseId}/conversation`);
+
+    if (d.staff_joined && !staffJoined) {
+      staffJoined = true;
+      announceHandover(d.turns);
     }
-  } catch { /* a failed poll is not worth telling the patient about */ }
+
+    for (const t of d.turns) {
+      if (t.role !== "staff" || shownStaff.has(t.index)) continue;
+      shownStaff.add(t.index);
+      bubble("staff", t.text, t.author);
+    }
+  } catch (err) { /* a failed poll is not worth telling the patient about */ }
 }
-setInterval(pollForStaff, 5000);
+setInterval(pollForStaff, 4000);
+
+/* When a person joins, say so plainly. A patient who asked to speak to
+   somebody needs to know that the next message is from a human and that VITA
+   has stepped back - otherwise the silence reads as nothing having happened. */
+function announceHandover(turns) {
+  const first = turns.find((t) => t.role === "staff");
+  const who = (first && first.author) || "Someone at the hospital";
+
+  const note = el("div", "handover");
+  note.textContent = `${who} has joined this conversation. You are talking to a person now - VITA is still listening and will pass anything you say to the hospital.`;
+  $("chat").append(note);
+  $("chat").scrollTop = $("chat").scrollHeight;
+
+  $("input").placeholder = "Reply to the hospital…";
+}
 
 /* ---------- registration ---------- */
 async function beginIntake() {

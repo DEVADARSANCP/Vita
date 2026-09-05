@@ -764,23 +764,62 @@ async function renderCase(d) {
   }
 }
 
+/* The open thread, kept live.
+
+   This used to render once from the cached note and never again, so a
+   clinician sitting on this tab watched a dead transcript: the patient replied,
+   the reply was recorded, and nothing on screen changed. New turns are now
+   appended on a timer, keyed by the index the server owns, so the input keeps
+   its focus and half-typed text survives. */
+let convoShown = new Set();
+let convoBox = null;
+let convoCase = "";
+
+function convoTurn(t) {
+  const row = el("div", `turn ${t.role}`);
+  const bub = el("div", "bub");
+  const who = t.role === "patient" ? "Patient"
+            : t.role === "staff" ? (t.author || "Hospital") : "VITA";
+  bub.append(el("div", "who", who));
+  bub.append(document.createTextNode(t.text));
+  row.append(bub);
+  return row;
+}
+
+async function pollConvo() {
+  if (tab !== "convo" || !selected || !convoBox || convoCase !== selected) return;
+  try {
+    const data = await api(`/api/cases/${selected}/conversation`);
+    let added = false;
+    for (const t of data.turns || []) {
+      if (convoShown.has(t.index)) continue;
+      convoShown.add(t.index);
+      const empty = convoBox.querySelector(".empty");
+      if (empty) empty.remove();
+      convoBox.append(convoTurn(t));
+      added = true;
+    }
+    if (added) convoBox.scrollTop = convoBox.scrollHeight;
+  } catch (err) { /* a failed poll is not worth an alert */ }
+}
+setInterval(pollConvo, 4000);
+
 async function renderConvo(d) {
-  const note = await loadNote();
   d.replaceChildren();
-  const turns = note.conversation || [];
+  convoShown = new Set();
+  convoCase = selected;
+
+  const data = await api(`/api/cases/${selected}/conversation`);
+  const turns = data.turns || [];
 
   const box = el("div", "convo");
+  convoBox = box;
   if (!turns.length) {
     box.append(el("div", "empty", "Nothing said yet."));
   } else {
     for (const t of turns) {
-      const row = el("div", `turn ${t.role}`);
-      const bub = el("div", "bub");
-      const who = t.role === "patient" ? "Patient" : t.role === "staff" ? (t.author || "Hospital") : "VITA";
-      bub.append(el("div", "who", who));
-      bub.append(document.createTextNode(t.text));
-      row.append(bub);
-      box.append(row);
+      convoShown.add(t.index);
+      box.append(convoTurn(t));
     }
   }
   d.append(box);
@@ -806,7 +845,10 @@ async function renderConvo(d) {
       });
       input.value = "";
       cachedNote = null;
-      await renderConvo($("detail"));
+      // The poll picks the new turn up with its real index; re-rendering here
+      // would take the focus out of the box mid-conversation.
+      await pollConvo();
+      input.focus();
     } catch (err) { alert(err.message); } finally { send.disabled = false; }
   };
   send.onclick = doSend;

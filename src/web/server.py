@@ -359,12 +359,24 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
         case = services.get_case(case_id)
         if case is None:
             raise HTTPException(status_code=404, detail=f"no case {case_id}")
-        turns = [t.as_dict() for t in case.turns]
+        # Each turn carries its position in the case. Clients used to page this
+        # with a count of the bubbles they had drawn, which drifts the moment
+        # a page renders anything the server did not record - an opening line,
+        # a photo confirmation, an error - and once it drifts, `since` slices
+        # straight past the staff message the patient was waiting for. An index
+        # the server owns cannot drift.
+        turns = []
+        for position, turn in enumerate(case.turns):
+            entry = turn.as_dict()
+            entry["index"] = position
+            turns.append(entry)
+
         return JSONResponse(
             {
                 "case_id": case_id,
                 "total": len(turns),
                 "turns": turns[since:] if since else turns,
+                "staff_joined": any(t["role"] == "staff" for t in turns),
             }
         )
 

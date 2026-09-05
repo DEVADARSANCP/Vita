@@ -155,7 +155,7 @@ class MedicationReader:
         if mime_type not in ACCEPTED_TYPES:
             return MedicationReading(error=f"unsupported image type {mime_type!r}")
 
-        outcome = self.llm.read_image_json(image, mime_type, _PROMPT, _SCHEMA)
+        outcome = self.llm.read_media_json(image, mime_type, _PROMPT, _SCHEMA)
         if not outcome.ok:
             return MedicationReading(error=outcome.error, elapsed_ms=outcome.elapsed_ms)
 

@@ -40,6 +40,7 @@ from ..store.requests import RequestStore
 from ..tools import ToolLayer
 from .ambulance import AmbulanceError, AmbulanceService
 from .medication import MedicationReader
+from .voice import VoiceListener
 from .notify import Notifier
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ class VitaServices:
         self.notifier = Notifier()
         self.ambulance = AmbulanceService()
         self.medications = MedicationReader(self.llm)
+        self.voice = VoiceListener(self.llm)
 
         self.red_flag_agent = RedFlagAgent()
         verify_coverage(self.red_flag_agent, self.kb.red_flags)
@@ -106,6 +108,7 @@ class VitaServices:
             "knowledge": self.kb.summary(),
             "retrieval": self.retriever.status(),
             "memory": self.memory.status(),
+            "voice": {"available": self.voice.available},
             "mcp": self.mcp.status(),
             "tools": self.tools.names(),
             "departments": [d.as_dict() for d in self.hospital.departments],
@@ -228,6 +231,43 @@ class VitaServices:
             self._on_finished(case)
 
         return result
+
+    def speak(self, case_id: str, audio: bytes, mime_type: str) -> dict[str, Any]:
+        """Take a spoken clip and run it through the intake as a normal message.
+
+        Voice is a transport. Once the words exist they go through the same
+        planner, the same rules and the same record as anything typed - there is
+        no separate voice pathway to keep in step with the written one.
+        """
+        case = self.get_case(case_id)
+        if case is None:
+            return {"error": f"no case {case_id!r}"}
+
+        heard = self.voice.listen(audio, mime_type)
+        case.voice_clips.append(heard.as_dict())
+
+        if heard.error:
+            self.cases.save(case)
+            return {"error": heard.error, "transcript": heard.as_dict()}
+
+        if not heard.heard or not heard.text:
+            self.cases.save(case)
+            self.cases.audit(case_id, "voice_unintelligible")
+            return {"transcript": heard.as_dict(), "turn": None}
+
+        # A patient who speaks Malayalam should be answered in it, even if they
+        # picked something else on the form.
+        if heard.language and heard.language != case.language:
+            logger.info("case %s heard in %s; switching from %s",
+                        case_id, heard.language, case.language)
+            case.language = heard.language
+
+        self.cases.audit(case_id, "voice_transcribed", detail=heard.text[:120])
+        result = self.message(case_id, heard.text)
+        return {
+            "transcript": heard.as_dict(),
+            "turn": result,
+        }
 
     def read_medication_photo(self, case_id: str, image: bytes, mime_type: str) -> dict[str, Any]:
         """Read a photo of the patient's medication and record what it establishes.

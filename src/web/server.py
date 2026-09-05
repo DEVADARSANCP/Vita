@@ -230,6 +230,35 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             raise HTTPException(status_code=404, detail=f"no case {case_id}")
         return JSONResponse(case.as_dict(full=False))
 
+    @app.post("/api/cases/{case_id}/voice")
+    async def voice(case_id: str, clip: UploadFile = File(...)) -> JSONResponse:
+        """Take a spoken clip, transcribe it, and run it through the intake.
+
+        Returns both what was heard and what the intake did with it, so the
+        patient can see their own words and correct them if they were misheard.
+        """
+        audio = await clip.read()
+        result = services.speak(case_id, audio, clip.content_type or "audio/webm")
+
+        if "error" in result and "transcript" not in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        turn = result.get("turn")
+        payload: dict[str, object] = {"case_id": case_id, "transcript": result["transcript"]}
+        if turn is not None:
+            payload.update(
+                {
+                    "reply": turn.reply,
+                    "finished": turn.finished,
+                    "mode": turn.mode.value,
+                    "facts_recorded": sorted(set(turn.facts_recorded)),
+                    "red_flags": turn.red_flags,
+                }
+            )
+            if turn.finished or turn.case.decision is not None:
+                payload["note"] = services.note(case_id)
+        return JSONResponse(payload)
+
     @app.post("/api/cases/{case_id}/medication-photo")
     async def medication_photo(case_id: str, photo: UploadFile = File(...)) -> JSONResponse:
         """Read a photo of the patient's medication.

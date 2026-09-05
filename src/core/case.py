@@ -185,6 +185,10 @@ class Case:
     #: what was concluded, and this says how it got there.
     reasoning_trace: list[dict[str, Any]] = field(default_factory=list)
 
+    #: Clips the patient spoke, and what was heard in each. Kept so a
+    #: clinician can see what was heard rather than only what was understood.
+    voice_clips: list[dict[str, Any]] = field(default_factory=list)
+
     #: Medication photographs the patient sent, and what was read from each.
     medication_photos: list[dict[str, Any]] = field(default_factory=list)
 
@@ -350,6 +354,7 @@ class Case:
             "working_impression_turn": self.working_impression_turn,
             "asked_for_clinician": self.asked_for_clinician,
             "medication_photos": self.medication_photos,
+            "voice_clips": self.voice_clips,
             "reasoning_trace": self.reasoning_trace,
             "asked_anything_else": self.asked_anything_else,
             "state_history": self.state_history,

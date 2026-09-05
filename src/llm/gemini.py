@@ -274,16 +274,16 @@ class GeminiClient:
         self.model = remaining[0]
         return True
 
-    def read_image_json(
+    def read_media_json(
         self,
-        image: bytes,
+        media: bytes,
         mime_type: str,
         prompt: str,
         schema: dict[str, Any],
         *,
         system_instruction: str = "",
     ) -> LLMResult:
-        """Read an image and return structured JSON about it.
+        """Read an image or an audio clip and return structured JSON about it.
 
         Used for medication photographs. Gemini is multimodal, so a picture of a
         blister pack needs no OCR engine, no model weights and no second network
@@ -310,7 +310,7 @@ class GeminiClient:
             response = self._client.models.generate_content(
                 model=self.model,
                 contents=[
-                    self._types.Part.from_bytes(data=image, mime_type=mime_type),
+                    self._types.Part.from_bytes(data=media, mime_type=mime_type),
                     prompt,
                 ],
                 config=config,
@@ -321,10 +321,13 @@ class GeminiClient:
                              elapsed_ms=int((time.monotonic() - started) * 1000))
         except Exception as exc:  # noqa: BLE001
             error = f"{type(exc).__name__}: {exc}"
-            logger.warning("image read failed: %s", error)
+            logger.warning("media read failed: %s", error)
             self._health.record(False, error)
             return LLMResult(ok=False, error=error,
                              elapsed_ms=int((time.monotonic() - started) * 1000))
+
+    #: The old name, from when this only took photographs.
+    read_image_json = read_media_json
 
     # -- embeddings ------------------------------------------------------
 

@@ -328,6 +328,7 @@ def _case_from_document(raw: dict[str, Any]) -> Case:
     case.working_impression_turn = int(raw.get("working_impression_turn", 0) or 0)
     case.asked_for_clinician = bool(raw.get("asked_for_clinician", False))
     case.medication_photos = list(raw.get("medication_photos") or [])
+    case.voice_clips = list(raw.get("voice_clips") or [])
     case.reasoning_trace = list(raw.get("reasoning_trace") or [])
     case.asked_anything_else = bool(raw.get("asked_anything_else", False))
     case.state_history = list(raw.get("state_history") or [])

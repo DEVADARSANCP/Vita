@@ -120,11 +120,6 @@
   .ticket dt { color: var(--muted); }
   .ticket dd { margin: 0; }
 
-  .examples { margin-top: 24px; }
-  .examples h4 { margin: 0 0 9px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 650; text-align: center; }
-  .examples .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 8px; }
-  .example { text-align: left; padding: 10px 12px; line-height: 1.45; font-size: 13px; border-radius: 8px; cursor: pointer; }
-  .example b { display: block; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 650; margin-bottom: 3px; }
 </style>
 </head>
 <body>
@@ -212,11 +207,6 @@
 
         <button class="primary" id="begin">Continue</button>
       </div>
-    </div>
-
-    <div class="examples">
-      <h4>Or try a ready-made patient</h4>
-      <div class="grid" id="examples"></div>
     </div>
   </div>
   </div>
@@ -779,43 +769,6 @@ function renderTransport(host) {
   host.append(box);
 }
 
-/* ---------- ready-made patients ---------- */
-const EXAMPLES = [
-  { label: "Routine", name: "Anil Joseph", age: "34", gender: "Male", meds: "no",
-    text: "I've had a fever since yesterday and my whole body aches", lang: "en" },
-  { label: "Time-critical", name: "Suresh Nair", age: "58", gender: "Male", meds: "no",
-    text: "I have crushing chest pain going down my left arm and I'm sweating", lang: "en" },
-  { label: "Looks well, is not", name: "Mary Thomas", age: "71", gender: "Female", meds: "yes",
-    history: "Atrial fibrillation", medlist: "Warfarin",
-    text: "I slipped in the bathroom and banged my head. I feel alright but I take warfarin.", lang: "en" },
-  { label: "Cannot answer", name: "John David", age: "45", gender: "Male", meds: "unsure",
-    text: "my chest hurts", lang: "en" },
-  { label: "Outside our scope", name: "Fatima Beevi", age: "63", gender: "Female", meds: "no",
-    text: "my face has gone droopy on one side and my speech is slurred", lang: "en" },
-  { label: "Malayalam", name: "Priya Menon", age: "40", gender: "Female", meds: "no",
-    text: "രാവിലെ മുതൽ നെഞ്ചുവേദനയും ശ്വാസംമുട്ടലും ഉണ്ട്", lang: "ml" },
-];
-
-function renderExamples() {
-  const grid = $("examples");
-  for (const ex of EXAMPLES) {
-    const b = el("button", "example");
-    b.append(el("b", null, ex.label), document.createTextNode(ex.text));
-    b.onclick = async () => {
-      $("f-name").value = ex.name;
-      $("f-age").value = ex.age;
-      $("f-gender").value = ex.gender;
-      $("f-history").value = ex.history || "";
-      $("f-lang").value = ex.lang;
-      setMedsAnswer(ex.meds);
-      $("f-medlist").value = ex.medlist || "";
-      if (await beginIntake()) { $("input").value = ex.text; send(); }
-    };
-    grid.append(b);
-  }
-}
-
-renderExamples();
 refreshMode();
 </script>
 </body>

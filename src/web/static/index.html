@@ -108,15 +108,9 @@
     width: 9px; height: 9px; border-radius: 50%; flex: none;
     background: var(--critical); animation: pulse 1.1s ease-in-out infinite;
   }
-  #mic-meter {
-    flex: none; width: 132px; height: 6px; border-radius: 3px;
-    background: var(--line); overflow: hidden;
-  }
-  #mic-meter i {
-    display: block; height: 100%; width: 0%; border-radius: 3px;
-    background: var(--critical); transition: width .07s linear;
-  }
-  #mic-time { font-variant-numeric: tabular-nums; }
+  /* The words themselves are the level meter: what the patient said appears
+     here as they say it, so silence and a dead microphone look different. */
+  #mic-time { flex: 1; min-width: 0; }
 
   .status {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -257,8 +251,7 @@
     </div>
     <div id="mic-live" hidden>
       <span class="dot"></span>
-      <span class="tiny muted" id="mic-time">Listening… 0:00</span>
-      <span id="mic-meter"><i></i></span>
+      <span class="tiny" id="mic-time">Listening…</span>
       <span class="tiny muted" id="mic-warn"></span>
     </div>
 
@@ -449,7 +442,8 @@ async function beginIntake() {
     if (pendingShots.length) uploadRegistrationShots();
 
     $("photo-hint").hidden = true;
-    if (!navigator.mediaDevices || !window.MediaRecorder) {
+    // Hide the microphone rather than offer a button that cannot work.
+    if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) {
       $("mic-btn").hidden = true;
       $("mic-hint").hidden = true;
     }
@@ -540,8 +534,6 @@ async function uploadRegistrationShots() {
    conversation unusable, and the reply is already on screen. Hearing it is a
    convenience. Understanding the patient is not. */
 
-let recorder = null, chunks = [], recording = false;
-
 function speak(text) {
   if (!("speechSynthesis" in window) || !text) return;
   try {
@@ -556,237 +548,141 @@ function speak(text) {
   } catch { /* not worth telling the patient about */ }
 }
 
-/* ---------- the level meter ----------
-   A red button means the browser started recording. It does not mean the
-   microphone can hear anything - a muted device, the wrong input selected, or
-   a laptop lid closed over the mic all record perfect silence and look
-   identical. Reading the signal back is the only honest indicator, and it is
-   also what tells somebody they are talking too quietly to be made out. */
-let meterRaf = null, meterCtx = null, startedAt = 0;
-let heardAnything = false, meterRan = false;
+/* ---------- speaking instead of typing ----------
 
-function startMeter(stream) {
-  try {
-    meterCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = meterCtx.createMediaStreamSource(stream);
-    const analyser = meterCtx.createAnalyser();
-    analyser.fftSize = 512;
-    source.connect(analyser);
-    const buf = new Uint8Array(analyser.fftSize);
+   The browser does the speech-to-text and the words go down the ordinary
+   message path, exactly as if they had been typed.
 
-    startedAt = Date.now();
-    heardAnything = false;
-    meterRan = true;
-    $("mic-hint").hidden = true;
-    $("mic-live").hidden = false;
-    $("mic-warn").textContent = "";
+   The previous version recorded audio and posted the clip for Gemini to
+   transcribe. That cost a round trip and it broke outright: MediaRecorder
+   produces webm/opus, which is not a format Gemini decodes, so every recording
+   came back as "I could not make that out".
 
-    const tick = () => {
-      analyser.getByteTimeDomainData(buf);
-      let sum = 0;
-      for (let i = 0; i < buf.length; i++) {
-        const v = (buf[i] - 128) / 128;
-        sum += v * v;
-      }
-      const rms = Math.sqrt(sum / buf.length);
-      // Speech sits low on a linear scale; the curve gives the quiet end room.
-      const level = Math.min(100, Math.round(Math.pow(rms, 0.55) * 260));
-      $("mic-meter").firstElementChild.style.width = level + "%";
-      if (level > 12) heardAnything = true;
+   SpeechRecognition has none of those problems. It is built into the browser,
+   it returns text in about a second, and it shows interim words while the
+   patient is still speaking - which is also the plainest possible sign that
+   the microphone is working. What it hands us is a string, so it goes through
+   the same validation, the same rules and the same record as anything typed.
+   Voice is a transport, not a second pipeline. */
 
-      const secs = Math.floor((Date.now() - startedAt) / 1000);
-      $("mic-time").textContent =
-        "Listening… 0:" + String(secs).padStart(2, "0");
-      if (!heardAnything && secs >= 3) {
-        $("mic-warn").textContent = "I cannot hear anything yet — is the right microphone on?";
-      } else if (heardAnything) {
-        $("mic-warn").textContent = "";
-      }
-      meterRaf = requestAnimationFrame(tick);
-    };
-    tick();
-  } catch {
-    // No WebAudio is survivable: the button still pulses and the clip is
-    // still recorded. Only the reassurance is lost - and with it the check
-    // below, which is why that check is conditional on the meter having run.
-    meterRan = false;
-    $("mic-hint").textContent = "Listening… tap again when you have finished.";
-  }
-}
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function stopMeter() {
-  if (meterRaf) cancelAnimationFrame(meterRaf);
-  meterRaf = null;
-  if (meterCtx) { try { meterCtx.close(); } catch {} meterCtx = null; }
-  $("mic-live").hidden = true;
-  $("mic-hint").hidden = false;
-}
+const SPEECH_LANG = {
+  en: "en-IN", ml: "ml-IN", hi: "hi-IN", ta: "ta-IN", bn: "bn-IN",
+  te: "te-IN", kn: "kn-IN", mr: "mr-IN", gu: "gu-IN", pa: "pa-IN",
+};
 
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    chunks = [];
-    recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-    recorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop());
-      // A clip with nothing in it is not worth sending. Asked to transcribe
-      // silence while it can still see the question it just asked, a model
-      // will write a plausible answer to that question - and downstream there
-      // is nothing that can tell the difference between a sentence somebody
-      // said and one it made up. Cheaper and safer to ask again.
-      if (meterRan && !heardAnything) {
-        bubble("vita", "I did not hear anything that time. Try again, a little closer to the microphone, or type it instead.");
-        return;
-      }
-      await sendClip(new Blob(chunks, { type: recorder.mimeType || "audio/webm" }));
-    };
-    // Timeslice, so a long answer still produces chunks if anything interrupts
-    // the recorder before stop() runs.
-    recorder.start(250);
-    recording = true;
-    $("mic-btn").classList.add("recording");
-    $("mic-btn").textContent = "■";
-    startMeter(stream);
-  } catch (err) {
-    $("mic-live").hidden = true;
-    $("mic-hint").hidden = false;
-    $("mic-hint").textContent =
-      (location.protocol !== "https:" && location.hostname !== "localhost")
-        ? "A browser only allows the microphone on localhost or https. You can type instead."
-        : "I could not reach your microphone — check the permission for this page. You can type instead.";
-  }
-}
+let recogniser = null;
+let listening = false;
+let heardText = "";
 
-function stopRecording() {
-  if (recorder && recording) recorder.stop();
-  recording = false;
-  stopMeter();
+function micIdle() {
+  listening = false;
   $("mic-btn").classList.remove("recording");
   $("mic-btn").textContent = "🎤";
-  $("mic-hint").textContent = "Prefer to talk? Tap 🎤, say what is wrong, tap again to stop. Any language.";
+  $("mic-live").hidden = true;
+  $("mic-hint").hidden = false;
+  $("mic-hint").textContent =
+    "Prefer to talk? Tap 🎤, say what is wrong, tap again to stop. Any language.";
 }
 
-/* Convert the recording to WAV before sending it.
-
-   MediaRecorder gives you audio/webm;codecs=opus and there is no way to ask
-   Chrome for anything else. Gemini's inline audio formats are wav, mp3, aiff,
-   aac, ogg and flac - webm is not one of them, so the clip uploaded fine, the
-   model decoded nothing, and every recording came back "I could not make that
-   out". Identical speech sent as WAV transcribed perfectly, which is what
-   isolated it.
-
-   The browser can already decode its own webm, so the conversion is local:
-   decode to PCM, mix to mono, resample to 16 kHz - plenty for speech and a
-   fraction of the bytes - and write a WAV header. No library, no server work,
-   no second network call. */
-const TARGET_RATE = 16000;
-
-async function toWav(blob) {
-  const bytes = await blob.arrayBuffer();
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  let decoded;
-  try {
-    decoded = await ctx.decodeAudioData(bytes);
-  } finally {
-    try { ctx.close(); } catch {}
+function startListening() {
+  if (!Recognition) {
+    $("mic-hint").textContent =
+      "This browser cannot listen. Chrome or Edge can - or you can type instead.";
+    return;
   }
 
-  const n = decoded.length;
-  const mono = new Float32Array(n);
-  for (let c = 0; c < decoded.numberOfChannels; c++) {
-    const data = decoded.getChannelData(c);
-    for (let i = 0; i < n; i++) mono[i] += data[i];
-  }
-  if (decoded.numberOfChannels > 1) {
-    for (let i = 0; i < n; i++) mono[i] /= decoded.numberOfChannels;
-  }
+  heardText = "";
+  recogniser = new Recognition();
+  recogniser.lang = SPEECH_LANG[$("f-lang").value] || "en-IN";
+  recogniser.interimResults = true;
+  recogniser.continuous = true;
+  recogniser.maxAlternatives = 1;
 
-  const ratio = decoded.sampleRate / TARGET_RATE;
-  const outLen = Math.max(1, Math.floor(n / ratio));
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const pos = i * ratio;
-    const a = Math.floor(pos);
-    const b = Math.min(a + 1, n - 1);
-    out[i] = mono[a] + (mono[b] - mono[a]) * (pos - a);
-  }
-
-  const buffer = new ArrayBuffer(44 + outLen * 2);
-  const view = new DataView(buffer);
-  const ascii = (off, text) => {
-    for (let i = 0; i < text.length; i++) view.setUint8(off + i, text.charCodeAt(i));
+  recogniser.onresult = (event) => {
+    let finalText = "";
+    let interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const chunk = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalText += chunk;
+      else interim += chunk;
+    }
+    if (finalText) heardText += finalText;
+    // The patient's own sentence appearing as they speak it is a better
+    // "the microphone is on" indicator than any meter.
+    $("mic-time").textContent = (heardText + interim).trim() || "Listening…";
   };
-  ascii(0, "RIFF");
-  view.setUint32(4, 36 + outLen * 2, true);
-  ascii(8, "WAVE");
-  ascii(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, TARGET_RATE, true);
-  view.setUint32(28, TARGET_RATE * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  ascii(36, "data");
-  view.setUint32(40, outLen * 2, true);
-  let off = 44;
-  for (let i = 0; i < outLen; i++) {
-    const v = Math.max(-1, Math.min(1, out[i]));
-    view.setInt16(off, v < 0 ? v * 0x8000 : v * 0x7fff, true);
-    off += 2;
-  }
-  return new Blob([buffer], { type: "audio/wav" });
-}
 
-async function sendClip(raw) {
-  if (!caseId || !raw.size) return;
-  $("typing").hidden = false;
-  $("typing").textContent = "Listening to what you said…";
-  $("mic-btn").disabled = $("send").disabled = true;
+  recogniser.onerror = (event) => {
+    const why = {
+      "not-allowed": "I need permission to use the microphone. You can type instead.",
+      "service-not-allowed": "I need permission to use the microphone. You can type instead.",
+      "no-speech": "I did not hear anything. Tap 🎤 and try again, or type it.",
+      "audio-capture": "I could not find a microphone. You can type instead.",
+      "network": "The speech service could not be reached. Please type it instead.",
+    }[event.error] || "I could not listen just then. Please type it instead.";
+    micIdle();
+    $("mic-hint").textContent = why;
+  };
+
+  recogniser.onend = () => {
+    const said = heardText.trim();
+    micIdle();
+    if (said) sendSpoken(said);
+  };
 
   try {
-    let blob;
-    try {
-      blob = await toWav(raw);
-    } catch (err) {
-      // Sending the webm anyway would come back as silence. A clear failure
-      // the patient can act on beats a transcript that never arrives.
-      bubble("vita", "I could not read that recording on this browser. Please type it instead.");
-      return;
-    }
-    const form = new FormData();
-    form.append("clip", blob, "speech.wav");
-    const res = await fetch(`/api/cases/${caseId}/voice`, { method: "POST", body: form });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const data = await res.json();
-    const heard = data.transcript || {};
-
-    if (!heard.heard || !heard.transcript) {
-      bubble("vita", "I could not make that out. Try again, or type it if that is easier.");
-      return;
-    }
-
-    // Show the patient their own words, so a mishearing is obvious and they can
-    // correct it rather than wondering why the answer was strange.
-    bubble("patient", heard.transcript);
-    const said = $("chat").lastElementChild.querySelector(".bubble");
-    const tag = el("div", "heard", "heard from your voice");
-    tag.style.color = "rgba(255,255,255,.75)";
-    said.append(tag);
-
-    if (data.reply) { bubble("vita", data.reply); speak(data.reply); }
-    if (data.note) { lastNote = data.note; renderStatus(data.note); }
+    recogniser.start();
   } catch (err) {
-    bubble("vita", "I could not hear that. Please type it instead.");
+    micIdle();
+    return;
+  }
+
+  listening = true;
+  $("mic-btn").classList.add("recording");
+  $("mic-btn").textContent = "■";
+  $("mic-hint").hidden = true;
+  $("mic-live").hidden = false;
+  $("mic-time").textContent = "Listening…";
+  $("mic-warn").textContent = "Tap again when you have finished.";
+}
+
+function stopListening() {
+  if (recogniser && listening) {
+    try { recogniser.stop(); } catch (err) { micIdle(); }
+  } else {
+    micIdle();
+  }
+}
+
+async function sendSpoken(text) {
+  if (!caseId) return;
+
+  bubble("patient", text);
+  const said = $("chat").lastElementChild.querySelector(".bubble");
+  const tag = el("div", "heard", "heard from your voice");
+  tag.style.color = "rgba(255,255,255,.75)";
+  said.append(tag);
+
+  $("typing").hidden = false;
+  $("mic-btn").disabled = $("send").disabled = true;
+  try {
+    const turn = await api(`/api/cases/${caseId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    if (turn.reply) { bubble("vita", turn.reply); speak(turn.reply); }
+    if (turn.note) { lastNote = turn.note; renderStatus(turn.note); }
+  } catch (err) {
+    bubble("vita", "Something went wrong on our side. Please speak to a member of staff at the desk.");
   } finally {
     $("typing").hidden = true;
-    $("typing").textContent = "VITA is reading your message…";
     $("mic-btn").disabled = $("send").disabled = false;
   }
 }
 
-$("mic-btn").onclick = () => (recording ? stopRecording() : startRecording());
+$("mic-btn").onclick = () => (listening ? stopListening() : startListening());
 
 /* ---------- asking for a person ----------
    Not everything is a triage question. Somebody frightened, or who does not

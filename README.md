@@ -68,6 +68,167 @@ paths are unaffected.
 
 ---
 
+## Architecture
+
+Three layers, and the boundaries between them are the design. Gemini handles
+language. A deterministic rule engine makes the triage decision. A human
+approves anything with a consequence. Nothing crosses those lines.
+
+```
+   PATIENT                                          HOSPITAL
+   index.html                                       dashboard.html
+   registration · chat · speech-to-text             queue · case · reasoning
+   medication photo · ambulance · ask for a person  approvals · override · chat
+        |                                                    ^
+        |  POST /api/cases/{id}/messages                     |  GET /api/queue
+        v                                                    |      /api/requests
+   +--------------------------------------------------------------------------+
+   |  src/web/server.py            FastAPI + uvicorn, one process, port 8000   |
+   |  src/services/container.py    VitaServices - builds and wires everything  |
+   +--------------------------------------------------------------------------+
+        |
+        v
+   +--------------------------------------------------------------------------+
+   |  src/orchestrator/planner.py            TriagePlanner                     |
+   |  runs the conversation, decides what to ask, never decides urgency        |
+   +--------------------------------------------------------------------------+
+      |            |                |                              |
+      v            v                v                              v
+  +---------+  +----------+  +--------------------+     +----------------------+
+  | RED     |  | SCOPE    |  |  MCP SESSION       |     |  GEMINI              |
+  | FLAGS   |  | CHECK    |  |  src/mcp_bridge.py |     |  src/llm/gemini.py   |
+  |         |  |          |  |                    |     |                      |
+  | 16 fixed|  | nearest- |  | a real MCP client  |     | flash-lite-latest    |
+  | phrases |  | class on |  | and server over an |     | structured JSON      |
+  | plain   |  | 55 label-|  | in-memory transport|     | + audio + image      |
+  | Python  |  | led exem-|  | - same protocol,   |     |                      |
+  | no model|  | plars    |  | one process, one   |     | THE ONLY THING THAT  |
+  | no net  |  |          |  | copy of the state  |     | TOUCHES THE NETWORK  |
+  |         |  | refuses  |  |                    |     +----------------------+
+  | runs    |  | a stroke |  | 19 tools:          |
+  | FIRST,  |  | rather   |  |  11 read-only      |
+  | before  |  | than     |  |   2 record facts   |
+  | any     |  | forcing  |  |   6 propose only   |
+  | network |  | it into  |  |                    |
+  | call    |  | 5 rules  |  | NO TOOL SETS AN    |
+  +---------+  +----------+  | URGENCY            |
+                             +--------------------+
+                               |        |       |
+              +----------------+        |       +------------------+
+              v                         v                          v
+   +--------------------+   +-----------------------+   +----------------------+
+   |  MEMPALACE         |   |  RETRIEVAL (RAG)      |   |  RULE ENGINE         |
+   |  src/memory/       |   |  src/rag/             |   |  src/core/rules.py   |
+   |    palace.py       |   |    retriever.py       |   |                      |
+   |                    |   |    scope.py           |   |  43 rules, 5 complai-|
+   |  backend:          |   |                       |   |  nts + general       |
+   |    sqlite_exact    |   |  25 documents         |   |                      |
+   |  embedder:         |   |    12 policy          |   |  TRUE / FALSE /      |
+   |    gemini-         |   |    13 guidance        |   |    UNKNOWN           |
+   |    embedding-001,  |   |  3072 dimensions      |   |  MATCHED / NOT_MAT-  |
+   |    injected so no  |   |  cosine over a        |   |    CHED / POTENTIAL  |
+   |    ONNX weights    |   |  committed .npy       |   |                      |
+   |    are ever pulled |   |  matrix, numpy only   |   |  escalation floor    |
+   |    from HuggingFace|   |                       |   |                      |
+   |                    |   |  + 55 scope exemplars |   |  *** THE DECISION.   |
+   |  what a patient    |   |                       |   |  NO MODEL REACHES    |
+   |  came in with last |   |  never selects a      |   |  THIS. ***           |
+   |  time, and whether |   |  clinical rule -      |   |                      |
+   |  it resolved       |   |  that is a lookup     |   |  no import of the    |
+   |                    |   |                       |   |  LLM client at all   |
+   |  runtime/palace/   |   |  data/index/          |   |  data/clinical/      |
+   +--------------------+   +-----------------------+   +----------------------+
+                                                                   |
+                                                                   v
+                                                    +--------------------------+
+                                                    |  TRIAGE NOTE             |
+                                                    |  src/core/note.py        |
+                                                    |  urgency + department    |
+                                                    |  rule id + rationale     |
+                                                    |  reported vs established |
+                                                    |  what is still unknown   |
+                                                    |  contradictions          |
+                                                    +--------------------------+
+                                                                   |
+                                                                   v
+                                                    +--------------------------+
+                                                    |  APPROVAL QUEUE          |
+                                                    |  src/core/requests.py    |
+                                                    |  7 kinds, each stating   |
+                                                    |  what approving it does  |
+                                                    |  notify · admit ·        |
+                                                    |  ambulance · raise ·     |
+                                                    |  refer · prepare · chat  |
+                                                    |                          |
+                                                    |  A PERSON DECIDES        |
+                                                    +--------------------------+
+
+   STORAGE   runtime/vita.db    SQLite: cases, audit, requests, appointments,
+                                admissions
+             runtime/palace/    MemPalace sqlite_exact, patient memory
+             data/clinical/     43 rules, 16 red flags, 42 questions  (committed)
+             data/knowledge/    25 documents, 55 exemplars            (committed)
+             data/index/        precomputed vectors, .npy             (committed)
+             data/hospital/     8 departments, 9 doctors, 12 rooms    (committed)
+```
+
+### MCP, specifically
+
+MCP is in the **request path**, not beside it. When a patient sends a message
+the planner reaches its capabilities by calling tools over a live MCP session —
+`list_tools`, `call_tool`, JSON-RPC, the lot.
+
+The transport is the unusual part. Running the server as a stdio subprocess —
+which `src/mcp_server.py` still does for external clients — would mean a second
+process holding a second knowledge base, a second SQLite connection and a second
+copy of the patient's case. Two systems disagreeing about the same patient is a
+worse problem than the one it solves. So the in-process planner uses MCP's
+in-memory transport: a genuine client and server joined by memory streams rather
+than pipes. Same protocol, same server object, same tool implementations, one
+copy of the state.
+
+The session is opened once at startup and lives for the process. Startup logs
+`MCP session ready: 19 tools`.
+
+The tools split into three tiers, and the split is the safety model: **11 read**
+(state, open questions, facts, memory, history, rules, policy, guidance, doctors,
+rooms, department load), **2 write facts** (`record_facts`, `set_complaint` —
+both validated against a closed vocabulary), and **6 propose** (`request_notify_doctor`,
+`request_admission`, `request_ambulance`, `request_raise_urgency`,
+`request_prepare_team`, `request_referral`). Notice what is absent: there is no
+tool that assigns an urgency, and no field in the planner's response schema
+either.
+
+### MemPalace, specifically
+
+MemPalace holds what VITA remembers between visits — what a patient came in with
+last time, whether it resolved, what they take, what a clinician concluded. The
+planner reads it at the start of an intake through `recall_patient_memory`, so
+somebody who has been in three times this fortnight is recognised as such rather
+than treated as a stranger.
+
+Two configuration choices make it work inside the submission rules:
+
+**Backend is `sqlite_exact`.** MemPalace defaults to Chroma. `sqlite_exact` is an
+explicit-vector backend needing only `sqlite3` and `numpy` — no vector service,
+one file on disk at `runtime/palace/`.
+
+**Embeddings come from Gemini.** MemPalace's built-in embedders download ONNX
+weights from HuggingFace on first use, which would be a second network dependency
+and a large download on a machine we do not control. `GeminiEmbeddingFunction` is
+injected over `mempalace.embedding.get_embedding_function`, so the store embeds
+through `gemini-embedding-001` — the model the rules already require — and
+nothing but Gemini ever crosses the network.
+
+Memory is written sparingly: visit outcomes, durable patient facts, clinician
+conclusions. Not transcripts. Every stored line costs an embedding call, and a
+store full of conversational noise retrieves worse than one holding a dozen
+clinically meaningful sentences.
+
+Recalled facts are labelled `memory_recall` and appear in the note under
+`recalled_from_records`, never mixed into what the patient said today. Memory
+informs; it does not silently become a rule input nobody confirmed.
+
 ## How it works
 
 ### One turn, end to end
@@ -146,26 +307,18 @@ HIGH / Emergency / human review required
 
 Never a quiet `LOW`.
 
-### MCP is in the request path
+### Driving the tools from outside
 
-Not beside it. When a patient sends a message, the planner reaches every
-capability by calling a tool over an MCP session — `list_tools`, `call_tool`,
-JSON-RPC, the lot. Nineteen flat tools; tools, not agents.
-
-The transport is unusual and deliberately so. Running the server as a stdio
-subprocess — which `src/mcp_server.py` still does for external clients — would
-mean a second process with a second knowledge base, a second SQLite connection
-and a second case cache: two systems disagreeing about one patient. The
-in-process planner instead uses MCP's in-memory transport, a real client and
-server over memory streams rather than pipes. Same protocol, same server object,
-one set of state.
+The tool layer is published over stdio as well, so an external MCP client runs
+the identical implementation the application uses. There is one implementation,
+so the two cannot drift apart.
 
 ```bash
 python -m src.mcp_server     # the same tools over stdio, for external clients
 ```
 
-`/api/tools` publishes the surface, because it is a claim worth being able to
-check.
+`/api/tools` publishes the surface over HTTP, because "no tool assigns an
+urgency" is a claim worth being able to check rather than take on trust.
 
 ### The approval queue is what makes the planner safe
 

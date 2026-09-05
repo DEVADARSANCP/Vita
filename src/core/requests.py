@@ -48,6 +48,7 @@ class RequestKind(str, Enum):
     RAISE_URGENCY = "raise_urgency"
     REFER_DEPARTMENT = "refer_department"
     TALK_TO_CLINICIAN = "talk_to_clinician"
+    PREPARE_TEAM = "prepare_team"
 
 
 class RequestStatus(str, Enum):
@@ -82,6 +83,10 @@ KIND_DETAIL: dict[RequestKind, dict[str, str]] = {
     RequestKind.TALK_TO_CLINICIAN: {
         "label": "Patient asked to speak to someone",
         "consequence": "Opens the chat so you can reply to them directly.",
+    },
+    RequestKind.PREPARE_TEAM: {
+        "label": "Prepare the team",
+        "consequence": "Alerts the receiving department to get ready before the patient reaches them.",
     },
 }
 

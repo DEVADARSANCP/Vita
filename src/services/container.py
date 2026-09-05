@@ -39,6 +39,7 @@ from ..store.hospital import HospitalDirectory
 from ..store.requests import RequestStore
 from ..tools import ToolLayer
 from .ambulance import AmbulanceError, AmbulanceService
+from .injury import InjuryReader
 from .medication import MedicationReader
 from .voice import VoiceListener
 from .notify import Notifier
@@ -72,6 +73,7 @@ class VitaServices:
         self.notifier = Notifier()
         self.ambulance = AmbulanceService()
         self.medications = MedicationReader(self.llm)
+        self.injuries = InjuryReader(self.llm)
         self.voice = VoiceListener(self.llm)
 
         self.red_flag_agent = RedFlagAgent()
@@ -322,6 +324,39 @@ class VitaServices:
 
         return {"transcript": heard, "turn": result}
 
+    def read_injury_photo(self, case_id: str, image: bytes, mime_type: str) -> dict[str, Any]:
+        """Read a photo of an injury and record what can be seen in it.
+
+        The findings go in through the same tool the planner uses, so something
+        seen in a photograph is recorded exactly like something the patient
+        said - same provenance, same validation, same rules.
+        """
+        case = self.get_case(case_id)
+        if case is None:
+            return {"error": f"no case {case_id!r}"}
+
+        reading = self.injuries.read(image, mime_type)
+        if reading.error:
+            return {"error": reading.error, "reading": reading.as_dict()}
+
+        if reading.facts:
+            self.tools.call(
+                "record_facts",
+                {
+                    "case_id": case_id,
+                    "facts": [
+                        {"key": key, "value": value,
+                         "evidence": f"seen in a photo of the injury: {reading.description[:110]}"}
+                        for key, value in reading.facts.items()
+                    ],
+                },
+            )
+
+        case.injury_photos.append(reading.as_dict())
+        self.cases.save(case)
+        self.cases.audit(case_id, "injury_photo_read", detail=reading.summary())
+        return {"case_id": case_id, "reading": reading.as_dict(), "summary": reading.summary()}
+
     def read_medication_photo(self, case_id: str, image: bytes, mime_type: str) -> dict[str, Any]:
         """Read a photo of the patient's medication and record what it establishes.
 
@@ -393,6 +428,37 @@ class VitaServices:
             )
 
         self._remember(case)
+
+        # A CRITICAL case always warrants advance warning, and it must not
+        # depend on the planner having had a turn. The red-flag fast path exists
+        # precisely so that somebody saying "a rod went through my leg" is
+        # graded and closed without a model call - which is also the case where
+        # the receiving team most needs telling before the patient reaches them.
+        if decision.urgency is Urgency.CRITICAL:
+            standing = [
+                r for r in self.requests.list(case_id=case.case_id)
+                if r.kind is RequestKind.PREPARE_TEAM
+            ]
+            if not standing:
+                flags = [f.label for f in self.kb.red_flags if f.id in case.red_flags]
+                because = ", ".join(decision.cited_rules) or ", ".join(flags) or "a critical presentation"
+                self.requests.add(
+                    Request.create(
+                        case_id=case.case_id,
+                        patient_id=case.patient_id,
+                        kind=RequestKind.PREPARE_TEAM,
+                        summary=f"Have {decision.department} ready before this patient arrives",
+                        reasoning=(
+                            f"Graded CRITICAL on {because}."
+                            + (f" Recognised straight from the patient's own words: {'; '.join(flags)}." if flags else "")
+                            + " Minutes spent setting up before they arrive are minutes"
+                              " not spent after."
+                        ),
+                        payload={"department": decision.department},
+                        evidence=[f"rule {r}" for r in decision.cited_rules]
+                                 + [f"red flag {f}" for f in case.red_flags],
+                    )
+                )
 
         if decision.urgency.rank >= NOTIFY_AT.rank:
             already = [
@@ -575,6 +641,11 @@ class VitaServices:
             case.override_at = request.decided_at
             self.cases.save(case)
             return {"urgency": level}
+
+        if request.kind is RequestKind.PREPARE_TEAM:
+            # The alert is the notification itself: the receiving team gets the
+            # note now rather than when the patient reaches them.
+            return self._notify(case, request.payload.get("department", ""))
 
         if request.kind is RequestKind.TALK_TO_CLINICIAN:
             # Approving simply opens the conversation; the reply is typed by a

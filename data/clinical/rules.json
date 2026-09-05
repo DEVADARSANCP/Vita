@@ -12,8 +12,16 @@
       "rule_id": "CP-01",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "breathing_difficulty", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -25,8 +33,16 @@
       "rule_id": "CP-02",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "pain_radiating", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "pain_radiating",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -38,9 +54,21 @@
       "rule_id": "CP-03",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "sweating", "op": "is", "value": true},
-        {"fact": "nausea", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "sweating",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "nausea",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -52,8 +80,16 @@
       "rule_id": "CP-04",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "fainting", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "fainting",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -65,8 +101,16 @@
       "rule_id": "CP-05",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "severity", "op": "gte", "value": 7}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "severity",
+          "op": "gte",
+          "value": 7
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -78,8 +122,16 @@
       "rule_id": "CP-06",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "known_cardiac_history", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "known_cardiac_history",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Cardiology",
@@ -91,9 +143,21 @@
       "rule_id": "CP-07",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "age_years", "op": "gte", "value": 40},
-        {"fact": "onset_hours", "op": "lte", "value": 12}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "age_years",
+          "op": "gte",
+          "value": 40
+        },
+        {
+          "fact": "onset_hours",
+          "op": "lte",
+          "value": 12
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -105,9 +169,21 @@
       "rule_id": "CP-08",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "pain_on_breathing", "op": "is", "value": true},
-        {"fact": "fever", "op": "is", "value": true}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "pain_on_breathing",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "MODERATE",
       "department": "General Medicine",
@@ -119,11 +195,31 @@
       "rule_id": "CP-09",
       "complaint": "chest_pain",
       "conditions": [
-        {"fact": "chest_pain", "op": "is", "value": true},
-        {"fact": "pain_reproducible_on_pressure", "op": "is", "value": true},
-        {"fact": "breathing_difficulty", "op": "is", "value": false},
-        {"fact": "pain_radiating", "op": "is", "value": false},
-        {"fact": "severity", "op": "lt", "value": 4}
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "pain_reproducible_on_pressure",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "pain_radiating",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "severity",
+          "op": "lt",
+          "value": 4
+        }
       ],
       "urgency": "LOW",
       "department": "General Medicine",
@@ -131,13 +227,20 @@
       "rationale": "Mild chest wall pain reproducible on pressure, with no dyspnoea and no radiation, is consistent with a musculoskeletal cause. Note that every cardiac feature must be explicitly excluded before this rule can fire.",
       "source": "Manchester Triage System - chest wall pain pattern"
     },
-
     {
       "rule_id": "FV-01",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "neck_stiffness", "op": "is", "value": true}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "neck_stiffness",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -149,8 +252,16 @@
       "rule_id": "FV-02",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "rash_non_blanching", "op": "is", "value": true}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "rash_non_blanching",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -162,8 +273,16 @@
       "rule_id": "FV-03",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "confusion", "op": "is", "value": true}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "confusion",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -175,8 +294,16 @@
       "rule_id": "FV-04",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "temperature_c", "op": "gte", "value": 40}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "temperature_c",
+          "op": "gte",
+          "value": 40
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -188,8 +315,16 @@
       "rule_id": "FV-05",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "breathing_difficulty", "op": "is", "value": true}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -201,8 +336,16 @@
       "rule_id": "FV-06",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "immunocompromised", "op": "is", "value": true}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "immunocompromised",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "General Medicine",
@@ -214,9 +357,21 @@
       "rule_id": "FV-07",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "temperature_c", "op": "gte", "value": 38},
-        {"fact": "duration_days", "op": "gte", "value": 5}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "temperature_c",
+          "op": "gte",
+          "value": 38
+        },
+        {
+          "fact": "duration_days",
+          "op": "gte",
+          "value": 5
+        }
       ],
       "urgency": "MODERATE",
       "department": "General Medicine",
@@ -228,12 +383,36 @@
       "rule_id": "FV-08",
       "complaint": "fever",
       "conditions": [
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "temperature_c", "op": "lt", "value": 38.5},
-        {"fact": "duration_days", "op": "lte", "value": 2},
-        {"fact": "confusion", "op": "is", "value": false},
-        {"fact": "breathing_difficulty", "op": "is", "value": false},
-        {"fact": "neck_stiffness", "op": "is", "value": false}
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "temperature_c",
+          "op": "lt",
+          "value": 38.5
+        },
+        {
+          "fact": "duration_days",
+          "op": "lte",
+          "value": 2
+        },
+        {
+          "fact": "confusion",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "neck_stiffness",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "LOW",
       "department": "General Medicine",
@@ -241,13 +420,20 @@
       "rationale": "A short-lived low-grade fever with no red-flag feature follows the routine pathway. Each red flag must be explicitly excluded, not merely unmentioned.",
       "source": "Manchester Triage System - uncomplicated febrile illness"
     },
-
     {
       "rule_id": "BR-01",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "speaking_full_sentences", "op": "is", "value": false}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "speaking_full_sentences",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -259,8 +445,16 @@
       "rule_id": "BR-02",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "lips_blue", "op": "is", "value": true}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "lips_blue",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -272,9 +466,21 @@
       "rule_id": "BR-03",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "sudden_onset", "op": "is", "value": true},
-        {"fact": "chest_pain", "op": "is", "value": true}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "sudden_onset",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -286,9 +492,21 @@
       "rule_id": "BR-04",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "known_asthma", "op": "is", "value": true},
-        {"fact": "wheezing", "op": "is", "value": true}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "known_asthma",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "wheezing",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -300,8 +518,16 @@
       "rule_id": "BR-05",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "fever", "op": "is", "value": true}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -313,11 +539,31 @@
       "rule_id": "BR-06",
       "complaint": "breathing_difficulty",
       "conditions": [
-        {"fact": "breathing_difficulty", "op": "is", "value": true},
-        {"fact": "onset_hours", "op": "gte", "value": 168},
-        {"fact": "speaking_full_sentences", "op": "is", "value": true},
-        {"fact": "lips_blue", "op": "is", "value": false},
-        {"fact": "chest_pain", "op": "is", "value": false}
+        {
+          "fact": "breathing_difficulty",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "onset_hours",
+          "op": "gte",
+          "value": 168
+        },
+        {
+          "fact": "speaking_full_sentences",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "lips_blue",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "chest_pain",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "MODERATE",
       "department": "Pulmonology",
@@ -325,13 +571,20 @@
       "rationale": "Breathlessness present for a week or more, with speech intact and no cyanosis or chest pain, is a chronic presentation suitable for the standard respiratory pathway.",
       "source": "Manchester Triage System - chronic breathlessness"
     },
-
     {
       "rule_id": "IN-01",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "bleeding_uncontrolled", "op": "is", "value": true}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "bleeding_uncontrolled",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -343,9 +596,21 @@
       "rule_id": "IN-02",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "head_injury", "op": "is", "value": true},
-        {"fact": "loss_of_consciousness", "op": "is", "value": true}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "head_injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "loss_of_consciousness",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -357,9 +622,21 @@
       "rule_id": "IN-03",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "head_injury", "op": "is", "value": true},
-        {"fact": "on_anticoagulants", "op": "is", "value": true}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "head_injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "on_anticoagulants",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -371,8 +648,16 @@
       "rule_id": "IN-04",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "mechanism_high_energy", "op": "is", "value": true}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "mechanism_high_energy",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -384,8 +669,16 @@
       "rule_id": "IN-05",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "deformity_visible", "op": "is", "value": true}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "deformity_visible",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Orthopaedics",
@@ -397,9 +690,21 @@
       "rule_id": "IN-06",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "can_bear_weight", "op": "is", "value": false},
-        {"fact": "bleeding_uncontrolled", "op": "is", "value": false}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "can_bear_weight",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "bleeding_uncontrolled",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "MODERATE",
       "department": "Orthopaedics",
@@ -411,12 +716,36 @@
       "rule_id": "IN-07",
       "complaint": "injury",
       "conditions": [
-        {"fact": "injury", "op": "is", "value": true},
-        {"fact": "bleeding_uncontrolled", "op": "is", "value": false},
-        {"fact": "head_injury", "op": "is", "value": false},
-        {"fact": "deformity_visible", "op": "is", "value": false},
-        {"fact": "can_bear_weight", "op": "is", "value": true},
-        {"fact": "mechanism_high_energy", "op": "is", "value": false}
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "bleeding_uncontrolled",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "head_injury",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "deformity_visible",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "can_bear_weight",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "mechanism_high_energy",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "LOW",
       "department": "Orthopaedics",
@@ -424,13 +753,20 @@
       "rationale": "A minor injury with no bleeding, no head involvement, no deformity and preserved function follows the routine pathway.",
       "source": "Manchester Triage System - minor limb injury"
     },
-
     {
       "rule_id": "AB-01",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "rigid_abdomen", "op": "is", "value": true}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "rigid_abdomen",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -442,8 +778,16 @@
       "rule_id": "AB-02",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "vomiting_blood", "op": "is", "value": true}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "vomiting_blood",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "CRITICAL",
       "department": "Emergency",
@@ -455,8 +799,16 @@
       "rule_id": "AB-03",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "black_stool", "op": "is", "value": true}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "black_stool",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -468,8 +820,16 @@
       "rule_id": "AB-04",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "pregnancy", "op": "is", "value": true}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "pregnancy",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -481,9 +841,21 @@
       "rule_id": "AB-05",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "sudden_severe_onset", "op": "is", "value": true},
-        {"fact": "severity", "op": "gte", "value": 7}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "sudden_severe_onset",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "severity",
+          "op": "gte",
+          "value": 7
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
@@ -495,8 +867,16 @@
       "rule_id": "AB-06",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "testicular_pain", "op": "is", "value": true}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "testicular_pain",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "HIGH",
       "department": "Surgery",
@@ -508,9 +888,21 @@
       "rule_id": "AB-07",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "fever", "op": "is", "value": true},
-        {"fact": "severity", "op": "gte", "value": 5}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "fever",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "severity",
+          "op": "gte",
+          "value": 5
+        }
       ],
       "urgency": "MODERATE",
       "department": "Surgery",
@@ -522,12 +914,36 @@
       "rule_id": "AB-08",
       "complaint": "abdominal_pain",
       "conditions": [
-        {"fact": "abdominal_pain", "op": "is", "value": true},
-        {"fact": "severity", "op": "lte", "value": 3},
-        {"fact": "vomiting_blood", "op": "is", "value": false},
-        {"fact": "black_stool", "op": "is", "value": false},
-        {"fact": "rigid_abdomen", "op": "is", "value": false},
-        {"fact": "pregnancy", "op": "is", "value": false}
+        {
+          "fact": "abdominal_pain",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "severity",
+          "op": "lte",
+          "value": 3
+        },
+        {
+          "fact": "vomiting_blood",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "black_stool",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "rigid_abdomen",
+          "op": "is",
+          "value": false
+        },
+        {
+          "fact": "pregnancy",
+          "op": "is",
+          "value": false
+        }
       ],
       "urgency": "LOW",
       "department": "General Medicine",
@@ -535,12 +951,15 @@
       "rationale": "Mild abdominal pain with every red-flag feature explicitly excluded follows the routine pathway.",
       "source": "Manchester Triage System - uncomplicated abdominal pain"
     },
-
     {
       "rule_id": "GEN-01",
       "complaint": "general",
       "conditions": [
-        {"fact": "prior_visit_72h_same_complaint", "op": "is", "value": true}
+        {
+          "fact": "prior_visit_72h_same_complaint",
+          "op": "is",
+          "value": true
+        }
       ],
       "urgency": "MODERATE",
       "department": "Triage Desk",
@@ -552,8 +971,16 @@
       "rule_id": "GEN-02",
       "complaint": "general",
       "conditions": [
-        {"fact": "age_years", "op": "gte", "value": 75},
-        {"fact": "severity", "op": "gte", "value": 5}
+        {
+          "fact": "age_years",
+          "op": "gte",
+          "value": 75
+        },
+        {
+          "fact": "severity",
+          "op": "gte",
+          "value": 5
+        }
       ],
       "urgency": "MODERATE",
       "department": "General Medicine",
@@ -565,14 +992,64 @@
       "rule_id": "GEN-03",
       "complaint": "general",
       "conditions": [
-        {"fact": "pregnancy", "op": "is", "value": true},
-        {"fact": "severity", "op": "gte", "value": 5}
+        {
+          "fact": "pregnancy",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "severity",
+          "op": "gte",
+          "value": 5
+        }
       ],
       "urgency": "HIGH",
       "department": "Emergency",
       "requires_human_review": true,
       "rationale": "Significant pain during pregnancy requires obstetric assessment that this rule set is not equipped to provide.",
       "source": "Manchester Triage System - pregnancy as a high-risk modifier"
+    },
+    {
+      "rule_id": "IN-08",
+      "complaint": "injury",
+      "conditions": [
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "foreign_object_embedded",
+          "op": "is",
+          "value": true
+        }
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "An object still embedded in a wound is treated as penetrating trauma. It may be tamponading a vessel it has already damaged, so it is left in place and the patient is taken straight through - the bleeding that matters can start the moment it is removed.",
+      "source": "Manchester Triage System - penetrating trauma discriminator"
+    },
+    {
+      "rule_id": "IN-09",
+      "complaint": "injury",
+      "conditions": [
+        {
+          "fact": "injury",
+          "op": "is",
+          "value": true
+        },
+        {
+          "fact": "amputation_or_degloving",
+          "op": "is",
+          "value": true
+        }
+      ],
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "requires_human_review": true,
+      "rationale": "Amputation, crush injury or degloving is a time-critical presentation with a real risk of catastrophic bleeding and of losing the part.",
+      "source": "Emergency Severity Index - level 1 high-risk presentation"
     }
   ]
 }

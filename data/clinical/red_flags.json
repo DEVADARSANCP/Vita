@@ -6,12 +6,22 @@
       "id": "RF-01",
       "label": "Unable to breathe",
       "patterns": [
-        "can't breathe", "cant breathe", "cannot breathe", "can not breathe",
-        "struggling to breathe", "gasping", "fighting for breath",
-        "ശ്വാസം കിട്ടുന്നില്ല", "ശ്വാസം മുട്ടുന്നു",
-        "सांस नहीं आ रही", "सांस लेने में तकलीफ"
+        "can't breathe",
+        "cant breathe",
+        "cannot breathe",
+        "can not breathe",
+        "struggling to breathe",
+        "gasping",
+        "fighting for breath",
+        "ശ്വാസം കിട്ടുന്നില്ല",
+        "ശ്വാസം മുട്ടുന്നു",
+        "सांस नहीं आ रही",
+        "सांस लेने में तकलीफ"
       ],
-      "facts": {"breathing_difficulty": true, "speaking_full_sentences": false},
+      "facts": {
+        "breathing_difficulty": true,
+        "speaking_full_sentences": false
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "The patient reports being unable to breathe. This is treated as severe respiratory distress without waiting for further questions."
@@ -20,13 +30,22 @@
       "id": "RF-02",
       "label": "Crushing or radiating chest pain",
       "patterns": [
-        "crushing chest", "chest feels like an elephant", "pressure in my chest",
-        "chest pain going down my arm", "pain in my chest and arm",
-        "chest pain radiating", "tightness in my chest and jaw",
-        "നെഞ്ചിൽ ഞെരുക്കം", "നെഞ്ചുവേദന കൈയിലേക്ക്",
-        "सीने में जकड़न", "सीने में दर्द बाजू में"
+        "crushing chest",
+        "chest feels like an elephant",
+        "pressure in my chest",
+        "chest pain going down my arm",
+        "pain in my chest and arm",
+        "chest pain radiating",
+        "tightness in my chest and jaw",
+        "നെഞ്ചിൽ ഞെരുക്കം",
+        "നെഞ്ചുവേദന കൈയിലേക്ക്",
+        "सीने में जकड़न",
+        "सीने में दर्द बाजू में"
       ],
-      "facts": {"chest_pain": true, "pain_radiating": true},
+      "facts": {
+        "chest_pain": true,
+        "pain_radiating": true
+      },
       "urgency": "HIGH",
       "department": "Emergency",
       "rationale": "The description matches a classic acute coronary syndrome pattern. Assessment is not delayed for further history."
@@ -35,12 +54,21 @@
       "id": "RF-03",
       "label": "Loss of consciousness",
       "patterns": [
-        "passed out", "blacked out", "fainted", "lost consciousness",
-        "unresponsive", "collapsed",
-        "ബോധം പോയി", "ബോധരഹിതൻ",
-        "बेहोश हो गया", "होश खो दिया"
+        "passed out",
+        "blacked out",
+        "fainted",
+        "lost consciousness",
+        "unresponsive",
+        "collapsed",
+        "ബോധം പോയി",
+        "ബോധരഹിതൻ",
+        "बेहोश हो गया",
+        "होश खो दिया"
       ],
-      "facts": {"fainting": true, "loss_of_consciousness": true},
+      "facts": {
+        "fainting": true,
+        "loss_of_consciousness": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "Loss of consciousness has a wide differential, much of it time-critical, and is escalated immediately."
@@ -49,12 +77,21 @@
       "id": "RF-04",
       "label": "Uncontrolled bleeding",
       "patterns": [
-        "bleeding heavily", "won't stop bleeding", "wont stop bleeding",
-        "blood everywhere", "bleeding a lot", "pouring blood",
-        "രക്തം നിൽക്കുന്നില്ല", "ഒരുപാട് രക്തം",
-        "खून बंद नहीं हो रहा", "बहुत खून"
+        "bleeding heavily",
+        "won't stop bleeding",
+        "wont stop bleeding",
+        "blood everywhere",
+        "bleeding a lot",
+        "pouring blood",
+        "രക്തം നിൽക്കുന്നില്ല",
+        "ഒരുപാട് രക്തം",
+        "खून बंद नहीं हो रहा",
+        "बहुत खून"
       ],
-      "facts": {"injury": true, "bleeding_uncontrolled": true},
+      "facts": {
+        "injury": true,
+        "bleeding_uncontrolled": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "Bleeding that does not stop with pressure is immediately life-threatening."
@@ -63,11 +100,17 @@
       "id": "RF-05",
       "label": "Blue lips or extremities",
       "patterns": [
-        "lips are blue", "turning blue", "lips went blue", "fingers are blue",
+        "lips are blue",
+        "turning blue",
+        "lips went blue",
+        "fingers are blue",
         "ചുണ്ട് നീലയായി",
         "होंठ नीले"
       ],
-      "facts": {"lips_blue": true, "breathing_difficulty": true},
+      "facts": {
+        "lips_blue": true,
+        "breathing_difficulty": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "Visible cyanosis indicates significant hypoxia."
@@ -76,12 +119,19 @@
       "id": "RF-06",
       "label": "Fever with non-blanching rash",
       "patterns": [
-        "rash that doesn't fade", "rash doesnt fade", "rash won't fade",
-        "purple spots", "purple rash", "rash and stiff neck",
+        "rash that doesn't fade",
+        "rash doesnt fade",
+        "rash won't fade",
+        "purple spots",
+        "purple rash",
+        "rash and stiff neck",
         "മങ്ങാത്ത തടിപ്പ്",
         "बुखार के साथ चकत्ते"
       ],
-      "facts": {"fever": true, "rash_non_blanching": true},
+      "facts": {
+        "fever": true,
+        "rash_non_blanching": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "A non-blanching rash with fever is treated as possible meningococcal sepsis."
@@ -90,11 +140,15 @@
       "id": "RF-07",
       "label": "Stiff neck with fever",
       "patterns": [
-        "stiff neck", "neck is stiff", "can't touch chin to chest",
+        "stiff neck",
+        "neck is stiff",
+        "can't touch chin to chest",
         "കഴുത്ത് തിരിക്കാൻ പറ്റുന്നില്ല",
         "गर्दन अकड़"
       ],
-      "facts": {"neck_stiffness": true},
+      "facts": {
+        "neck_stiffness": true
+      },
       "urgency": "HIGH",
       "department": "Emergency",
       "rationale": "Neck stiffness raises the possibility of meningitis and is assessed urgently."
@@ -103,12 +157,18 @@
       "id": "RF-08",
       "label": "Vomiting blood",
       "patterns": [
-        "vomiting blood", "throwing up blood", "vomited blood",
-        "coffee ground vomit", "blood in my vomit",
+        "vomiting blood",
+        "throwing up blood",
+        "vomited blood",
+        "coffee ground vomit",
+        "blood in my vomit",
         "രക്തം ഛർദ്ദിച്ചു",
         "खून की उल्टी"
       ],
-      "facts": {"abdominal_pain": true, "vomiting_blood": true},
+      "facts": {
+        "abdominal_pain": true,
+        "vomiting_blood": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "Haematemesis indicates active upper gastrointestinal bleeding."
@@ -117,12 +177,18 @@
       "id": "RF-09",
       "label": "Rigid abdomen",
       "patterns": [
-        "stomach is hard", "belly is rigid", "abdomen is rigid",
-        "can't touch my stomach", "stomach hard as a board",
+        "stomach is hard",
+        "belly is rigid",
+        "abdomen is rigid",
+        "can't touch my stomach",
+        "stomach hard as a board",
         "വയർ കല്ലുപോലെ",
         "पेट सख्त"
       ],
-      "facts": {"abdominal_pain": true, "rigid_abdomen": true},
+      "facts": {
+        "abdominal_pain": true,
+        "rigid_abdomen": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "A rigid abdomen suggests peritonitis, which is a surgical emergency."
@@ -136,7 +202,11 @@
         "head injury on blood thinners",
         "banged my head, i take apixaban"
       ],
-      "facts": {"injury": true, "head_injury": true, "on_anticoagulants": true},
+      "facts": {
+        "injury": true,
+        "head_injury": true,
+        "on_anticoagulants": true
+      },
       "urgency": "HIGH",
       "department": "Emergency",
       "rationale": "Head injury while anticoagulated carries a raised risk of delayed intracranial bleeding even when the patient appears well."
@@ -145,10 +215,15 @@
       "id": "RF-11",
       "label": "Suspected stroke",
       "patterns": [
-        "face is drooping", "can't move my arm", "slurred speech",
-        "one side is weak", "can't speak properly",
-        "മുഖം കോടി", "സംസാരിക്കാൻ പറ്റുന്നില്ല",
-        "बोलने में दिक्कत", "चेहरा टेढ़ा"
+        "face is drooping",
+        "can't move my arm",
+        "slurred speech",
+        "one side is weak",
+        "can't speak properly",
+        "മുഖം കോടി",
+        "സംസാരിക്കാൻ പറ്റുന്നില്ല",
+        "बोलने में दिक्कत",
+        "चेहरा टेढ़ा"
       ],
       "facts": {},
       "urgency": "CRITICAL",
@@ -160,8 +235,12 @@
       "id": "RF-12",
       "label": "Self-harm or suicidal intent",
       "patterns": [
-        "want to kill myself", "end my life", "hurt myself", "suicidal",
-        "don't want to live", "dont want to live",
+        "want to kill myself",
+        "end my life",
+        "hurt myself",
+        "suicidal",
+        "don't want to live",
+        "dont want to live",
         "ജീവിക്കാൻ തോന്നുന്നില്ല",
         "जीना नहीं चाहता"
       ],
@@ -175,12 +254,16 @@
       "id": "RF-13",
       "label": "Pregnancy with bleeding or severe pain",
       "patterns": [
-        "pregnant and bleeding", "pregnant and severe pain",
-        "pregnant with stomach pain", "i'm pregnant and in pain",
+        "pregnant and bleeding",
+        "pregnant and severe pain",
+        "pregnant with stomach pain",
+        "i'm pregnant and in pain",
         "ഗർഭിണി രക്തസ്രാവം",
         "गर्भवती और खून"
       ],
-      "facts": {"pregnancy": true},
+      "facts": {
+        "pregnancy": true
+      },
       "urgency": "HIGH",
       "department": "Emergency",
       "out_of_scope": true,
@@ -190,14 +273,68 @@
       "id": "RF-14",
       "label": "Choking or airway obstruction",
       "patterns": [
-        "choking", "something stuck in my throat", "can't swallow anything",
+        "choking",
+        "something stuck in my throat",
+        "can't swallow anything",
         "തൊണ്ടയിൽ കുടുങ്ങി",
         "गले में फंस"
       ],
-      "facts": {"breathing_difficulty": true},
+      "facts": {
+        "breathing_difficulty": true
+      },
       "urgency": "CRITICAL",
       "department": "Emergency",
       "rationale": "A possible airway obstruction is the most time-critical presentation there is."
+    },
+    {
+      "id": "RF-15",
+      "label": "Object embedded in a wound",
+      "patterns": [
+        "rod went through",
+        "rod through my",
+        "impaled",
+        "iron rod",
+        "something is stuck in my",
+        "glass stuck in",
+        "metal in my",
+        "knife is still in",
+        "nail went through",
+        "went right through my",
+        "കമ്പി തറച്ചു",
+        "കുത്തിക്കയറി",
+        "छड़ घुस गई",
+        "सरिया घुस"
+      ],
+      "facts": {
+        "injury": true,
+        "foreign_object_embedded": true
+      },
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "rationale": "An object still in the wound is penetrating trauma. It is left in place and the patient goes straight through."
+    },
+    {
+      "id": "RF-16",
+      "label": "Amputation or crush injury",
+      "patterns": [
+        "finger came off",
+        "cut off my",
+        "cut my finger off",
+        "severed",
+        "crushed my hand",
+        "crushed under",
+        "arm was crushed",
+        "വിരൽ മുറിഞ്ഞു പോയി",
+        "उंगली कट गई",
+        "कुचल गया"
+      ],
+      "facts": {
+        "injury": true,
+        "amputation_or_degloving": true
+      },
+      "urgency": "CRITICAL",
+      "department": "Emergency",
+      "rationale": "Amputation or crush injury is time-critical and can bleed catastrophically."
     }
   ]
 }

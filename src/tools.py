@@ -338,6 +338,23 @@ class ToolLayer:
             self._request_raise_urgency,
         )
         self._add(
+            "request_prepare_team",
+            "Ask for the receiving department to be told to get ready before the "
+            "patient reaches them. For presentations where the minutes spent "
+            "setting up would otherwise be spent after arrival - penetrating "
+            "trauma, an amputation, catastrophic bleeding, an airway that is "
+            "closing. Say what they should have ready and why.",
+            {
+                "case_id": _string("Case identifier", required=True),
+                "reasoning": _string(
+                    "What is coming and what the team should have ready for it",
+                    required=True,
+                ),
+                "department": _string("Department that should prepare"),
+            },
+            self._request_prepare_team,
+        )
+        self._add(
             "request_referral",
             "Ask for the case to be routed to a different department, for example a "
             "complaint outside the five this rule set covers. Creates a request for "
@@ -716,6 +733,15 @@ class ToolLayer:
         return self._raise(
             case_id, RequestKind.RAISE_URGENCY, f"Raise urgency to {level.value}",
             reasoning, {"urgency": level.value},
+        )
+
+    def _request_prepare_team(self, case_id: str, reasoning: str, department: str = "") -> dict[str, Any]:
+        case = self._case_or_error(case_id)
+        target = department or (case.decision.department if case and case.decision else "Emergency")
+        return self._raise(
+            case_id, RequestKind.PREPARE_TEAM,
+            f"Have {target} ready before the patient arrives",
+            reasoning, {"department": target},
         )
 
     def _request_referral(self, case_id: str, department: str, reasoning: str) -> dict[str, Any]:

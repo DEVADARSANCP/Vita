@@ -163,6 +163,14 @@
       "type": "boolean",
       "askable": true,
       "note": "Normally established from the patient's prior visits rather than asked, but askable as a fallback when no record is found."
+    },
+    "foreign_object_embedded": {
+      "text": "Is anything still stuck in the wound — glass, metal, a rod, anything like that?",
+      "type": "boolean"
+    },
+    "amputation_or_degloving": {
+      "text": "Has any part been cut off, crushed, or had the skin torn away?",
+      "type": "boolean"
     }
   }
 }

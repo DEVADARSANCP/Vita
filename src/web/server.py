@@ -264,6 +264,19 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
                 payload["note"] = services.note(case_id)
         return JSONResponse(payload)
 
+    @app.post("/api/cases/{case_id}/injury-photo")
+    async def injury_photo(case_id: str, photo: UploadFile = File(...)) -> JSONResponse:
+        """Read a photo of an injury.
+
+        Reports what is visibly present and nothing else. Naming the injury or
+        judging its severity is a clinician's job in person.
+        """
+        image = await photo.read()
+        result = services.read_injury_photo(case_id, image, photo.content_type or "image/jpeg")
+        if "error" in result and "reading" not in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return JSONResponse(result)
+
     @app.post("/api/cases/{case_id}/medication-photo")
     async def medication_photo(case_id: str, photo: UploadFile = File(...)) -> JSONResponse:
         """Read a photo of the patient's medication.

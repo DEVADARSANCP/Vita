@@ -667,15 +667,96 @@ function stopRecording() {
   $("mic-hint").textContent = "Prefer to talk? Tap 🎤, say what is wrong, tap again to stop. Any language.";
 }
 
-async function sendClip(blob) {
-  if (!caseId || !blob.size) return;
+/* Convert the recording to WAV before sending it.
+
+   MediaRecorder gives you audio/webm;codecs=opus and there is no way to ask
+   Chrome for anything else. Gemini's inline audio formats are wav, mp3, aiff,
+   aac, ogg and flac - webm is not one of them, so the clip uploaded fine, the
+   model decoded nothing, and every recording came back "I could not make that
+   out". Identical speech sent as WAV transcribed perfectly, which is what
+   isolated it.
+
+   The browser can already decode its own webm, so the conversion is local:
+   decode to PCM, mix to mono, resample to 16 kHz - plenty for speech and a
+   fraction of the bytes - and write a WAV header. No library, no server work,
+   no second network call. */
+const TARGET_RATE = 16000;
+
+async function toWav(blob) {
+  const bytes = await blob.arrayBuffer();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  let decoded;
+  try {
+    decoded = await ctx.decodeAudioData(bytes);
+  } finally {
+    try { ctx.close(); } catch {}
+  }
+
+  const n = decoded.length;
+  const mono = new Float32Array(n);
+  for (let c = 0; c < decoded.numberOfChannels; c++) {
+    const data = decoded.getChannelData(c);
+    for (let i = 0; i < n; i++) mono[i] += data[i];
+  }
+  if (decoded.numberOfChannels > 1) {
+    for (let i = 0; i < n; i++) mono[i] /= decoded.numberOfChannels;
+  }
+
+  const ratio = decoded.sampleRate / TARGET_RATE;
+  const outLen = Math.max(1, Math.floor(n / ratio));
+  const out = new Float32Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const pos = i * ratio;
+    const a = Math.floor(pos);
+    const b = Math.min(a + 1, n - 1);
+    out[i] = mono[a] + (mono[b] - mono[a]) * (pos - a);
+  }
+
+  const buffer = new ArrayBuffer(44 + outLen * 2);
+  const view = new DataView(buffer);
+  const ascii = (off, text) => {
+    for (let i = 0; i < text.length; i++) view.setUint8(off + i, text.charCodeAt(i));
+  };
+  ascii(0, "RIFF");
+  view.setUint32(4, 36 + outLen * 2, true);
+  ascii(8, "WAVE");
+  ascii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, TARGET_RATE, true);
+  view.setUint32(28, TARGET_RATE * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  ascii(36, "data");
+  view.setUint32(40, outLen * 2, true);
+  let off = 44;
+  for (let i = 0; i < outLen; i++) {
+    const v = Math.max(-1, Math.min(1, out[i]));
+    view.setInt16(off, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+    off += 2;
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function sendClip(raw) {
+  if (!caseId || !raw.size) return;
   $("typing").hidden = false;
   $("typing").textContent = "Listening to what you said…";
   $("mic-btn").disabled = $("send").disabled = true;
 
   try {
+    let blob;
+    try {
+      blob = await toWav(raw);
+    } catch (err) {
+      // Sending the webm anyway would come back as silence. A clear failure
+      // the patient can act on beats a transcript that never arrives.
+      bubble("vita", "I could not read that recording on this browser. Please type it instead.");
+      return;
+    }
     const form = new FormData();
-    form.append("clip", blob, "speech.webm");
+    form.append("clip", blob, "speech.wav");
     const res = await fetch(`/api/cases/${caseId}/voice`, { method: "POST", body: form });
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const data = await res.json();

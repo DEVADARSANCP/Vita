@@ -57,16 +57,39 @@ MAX_AUDIO_BYTES = 8 * 1024 * 1024
 #: it several times over.
 MIN_AUDIO_BYTES = 1024
 
-#: What a browser's MediaRecorder actually produces, plus the obvious uploads.
+#: The audio formats Gemini accepts inline, and nothing beyond them.
+#:
+#: This list used to include audio/webm because that is what a browser's
+#: MediaRecorder produces, and accepting it looked like the accommodating
+#: choice. It was the opposite: Gemini does not decode webm, so every recording
+#: from the browser uploaded cleanly, transcribed to nothing, and came back as
+#: "I could not make that out" - a silent failure with no error anywhere to
+#: explain it. The same speech sent as WAV worked every time.
+#:
+#: The page now converts to WAV before uploading (see toWav in index.html).
+#: Webm is refused here so that if a client ever sends one, it fails with a
+#: sentence saying why rather than with silence.
 ACCEPTED_TYPES = {
-    "audio/webm",
-    "audio/ogg",
     "audio/wav",
     "audio/x-wav",
-    "audio/mp4",
     "audio/mpeg",
+    "audio/mp3",
+    "audio/aiff",
     "audio/aac",
+    "audio/ogg",
     "audio/flac",
+}
+
+#: Refused with an explanation rather than a generic "unsupported".
+UNDECODABLE_TYPES = {
+    "audio/webm": (
+        "this browser records in a format the speech model cannot read; "
+        "the page should convert it to WAV before sending"
+    ),
+    "audio/mp4": (
+        "MP4 audio is not one of the formats the speech model accepts; "
+        "please send WAV, MP3, OGG or FLAC"
+    ),
 }
 
 _SCHEMA = {
@@ -152,6 +175,8 @@ class VoiceListener:
         if len(audio) > MAX_AUDIO_BYTES:
             return "that recording is too long; please keep it under a minute"
         base = mime_type.split(";")[0].strip().lower()
+        if base in UNDECODABLE_TYPES:
+            return UNDECODABLE_TYPES[base]
         if base not in ACCEPTED_TYPES:
             return f"unsupported audio type {base!r}"
         if not self.available:

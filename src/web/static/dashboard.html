@@ -405,7 +405,13 @@ async function renderTodo() {
       return;
     }
 
-    for (const r of pending) host.append(requestCard(r));
+    const cards = [];
+    for (const r of pending) {
+      const card = requestCard(r);
+      host.append(card);
+      cards.push(card);
+    }
+    showFirstFew(host, cards, "requests");
 
     if (waiting.length) {
       const box = el("div");

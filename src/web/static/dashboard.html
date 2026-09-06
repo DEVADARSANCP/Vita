@@ -215,6 +215,16 @@
       </div>
       <div class="panel-body" id="capacity"></div>
     </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-head">
+        <div>
+          <div>Doctors and bookings</div>
+          <div class="sub">Who is on, when their clinic runs, and the slots VITA has reserved. Patients graded HIGH or above are sent through and are not given a slot.</div>
+        </div>
+      </div>
+      <div class="panel-body" id="roster"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -517,6 +527,63 @@ function requestCard(r) {
   return box;
 }
 
+/* Who is on, and what has been booked with them.
+
+   The directory and the appointment book were both reachable over the API and
+   neither was ever displayed, so a clinician could see that a patient had been
+   given a time only by opening that patient's case. This puts the day on one
+   panel: each doctor, their clinic hours, and the slots reserved against them. */
+async function renderRoster() {
+  const host = $("roster");
+  try {
+    const [docs, appts] = await Promise.all([
+      api("/api/doctors"),
+      api("/api/appointments"),
+    ]);
+    host.replaceChildren();
+
+    const booked = {};
+    for (const a of appts.appointments || []) {
+      (booked[a.doctor_id] = booked[a.doctor_id] || []).push(a);
+    }
+
+    const total = (appts.appointments || []).length;
+    const line = el("p", "small muted",
+      total === 0 ? "No appointments booked yet."
+                  : `${total} appointment${total > 1 ? "s" : ""} booked.`);
+    line.style.margin = "0 0 10px";
+    host.append(line);
+
+    const rows = [];
+    for (const doc of docs.doctors || []) {
+      const row = el("div", "todo-row");
+      row.style.cursor = "default";
+
+      const what = el("div", "what");
+      what.append(el("b", null, `${doc.name} — ${doc.department}`));
+      const mine = booked[doc.id] || [];
+      const detail = `clinic ${doc.clinic} · ${doc.slot_minutes} min slots`
+        + (mine.length ? ` · ${mine.length} booked` : " · nothing booked");
+      what.append(el("span", null, detail));
+
+      for (const a of mine) {
+        const slot = el("span", "tiny muted");
+        slot.style.display = "block";
+        slot.textContent = `${a.when} · token ${a.token} · ${a.patient_name}`
+          + (a.status && a.status !== "booked" ? ` · ${a.status}` : "");
+        what.append(slot);
+      }
+
+      row.append(what, el("span", "tiny muted", doc.on_call ? "on call" : "off"));
+      host.append(row);
+      rows.push(row);
+    }
+    showFirstFew(host, rows, "doctors");
+  } catch (err) {
+    host.replaceChildren(el("div", "empty", "Could not load: " + err.message));
+  }
+}
+
 async function renderCapacity() {
   const host = $("capacity");
   try {
@@ -600,6 +667,20 @@ async function renderCase(d) {
     d.append(b);
   }
   if (note.routing) d.append(el("div", "banner info", note.routing));
+
+  // What the patient was actually told. A clinician looking at a waiting
+  // patient needs to know they were given a time, with whom, and what number
+  // they are holding - otherwise the two sides of the same booking disagree.
+  const appt = note.appointment;
+  if (appt) {
+    const box = el("div", "banner info");
+    box.append(el("b", null, `Booked: ${appt.doctor_name}, ${appt.when}`));
+    box.append(document.createTextNode(
+      ` · token ${appt.token} · ${appt.department}`
+      + (appt.status && appt.status !== "booked" ? ` · ${appt.status}` : "")));
+    d.append(box);
+  }
+
   if (rec.requires_human_review) {
     d.append(el("div", "banner warn",
       `Human review required. ${(note.escalation.reasons || []).map((r) => r.explanation).join(" ")}`));
@@ -912,13 +993,14 @@ for (const b of document.querySelectorAll("#case-tabs button")) {
     b.classList.add("on"); tab = b.dataset.tab; renderDetail();
   };
 }
-$("refresh").onclick = () => { refreshQueue(); refreshStatus(); renderTodo(); renderCapacity(); };
+$("refresh").onclick = () => { refreshQueue(); refreshStatus(); renderTodo(); renderCapacity(); renderRoster(); };
 
 refreshStatus();
 refreshQueue();
+renderRoster();
 renderTodo();
 renderCapacity();
-setInterval(() => { refreshQueue(); renderTodo(); }, 8000);
+setInterval(() => { refreshQueue(); renderTodo(); renderRoster(); }, 8000);
 setInterval(refreshStatus, 15000);
 </script>
 </body>

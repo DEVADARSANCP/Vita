@@ -501,6 +501,13 @@ class VitaServices:
         decision = case.decision
         if decision is None or case.synthetic:
             return None
+        # A case VITA declined to triage is not a waiting patient. They are
+        # told a clinician will see them directly and are never shown a slot,
+        # so booking one anyway created an appointment nobody had been told
+        # about, holding a real time and a real token against a doctor who
+        # would be waiting for somebody that never comes.
+        if case.out_of_scope:
+            return None
         if not self.appointments.should_book(case.effective_urgency):
             return None
 

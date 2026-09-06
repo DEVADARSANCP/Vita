@@ -407,6 +407,22 @@ def create_app(settings: Settings | None = None, services: VitaServices | None =
             raise HTTPException(status_code=400, detail=result["error"])
         return JSONResponse(result)
 
+    # -- appointments ------------------------------------------------------
+
+    @app.get("/api/appointments")
+    def appointments(case_id: str = "") -> JSONResponse:
+        """Booked slots — for one case, or every live booking soonest first.
+
+        A patient graded below HIGH is given a real time with a named doctor
+        rather than a department to go and find. This publishes what was
+        reserved so both interfaces, and anyone checking the claim, can see it.
+        """
+        book = services.appointments
+        rows = book.for_case(case_id) if case_id else book.upcoming()
+        return JSONResponse(
+            {"case_id": case_id, "appointments": [a.as_dict() for a in rows]}
+        )
+
     # -- admissions and rooms ----------------------------------------------
 
     @app.get("/api/rooms")

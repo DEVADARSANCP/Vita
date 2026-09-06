@@ -201,14 +201,29 @@ class Phraser:
         Neither version names a condition, reassures, or tells anybody they are
         fine.
         """
-        if out_of_scope:
-            return self.say("out_of_scope", language)
-
+        # An urgent disposition outranks the refusal, and the order here is the
+        # whole of that rule.
+        #
+        # A case can be both: graded HIGH or CRITICAL by something the rules or
+        # the red-flag pass recognised, and *also* described in terms this rule
+        # set does not cover. Telling that patient "outside what I am able to
+        # assess" is true but useless - it sends somebody with an active
+        # emergency disposition away to work out what to do next, when the
+        # system already knows which department they need and that a clinician
+        # is being told.
+        #
+        # Nothing about the grading changes here. `out_of_scope` stays set on
+        # the case, the escalation still carries it, and the clinician still
+        # sees that VITA did not consider the complaint its own. This decides
+        # only which sentence the patient reads.
         if urgency in (Urgency.HIGH, Urgency.CRITICAL):
             parts = [self.say("sent_now", language, department=department)]
             if requires_review:
                 parts.append(self.say("review_required", language))
             return " ".join(p for p in parts if p)
+
+        if out_of_scope:
+            return self.say("out_of_scope", language)
 
         if appointment is not None:
             parts = [

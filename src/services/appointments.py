@@ -285,6 +285,21 @@ class AppointmentBook:
             ).fetchall()
         return [_from_row(r) for r in rows]
 
+    def upcoming(self, *, limit: int = 100) -> list[Appointment]:
+        """Every live booking, soonest first.
+
+        Removed once as unreachable and restored when `/api/appointments` gave
+        it a caller. The dashboard needs the day's list, not just one case's:
+        a clinician looking at the desk wants to know what is coming.
+        """
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM appointments WHERE status <> 'cancelled' "
+                "ORDER BY slot_date, slot_time LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [_from_row(r) for r in rows]
+
     def cancel(self, appointment_id: str, note: str = "") -> bool:
         """Release a slot. Used when a clinician sends the patient through instead."""
         with self._lock:

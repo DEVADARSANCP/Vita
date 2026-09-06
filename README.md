@@ -14,7 +14,7 @@ established, and what could not be established at all.
 **VITA does not diagnose.** Every recommendation cites the rule that produced
 it, and uncertain or high-risk cases go to a human rather than being guessed at.
 
-**Demo:** <https://youtu.be/3vDoa9yGoNs>
+**Demo:** <https://youtu.be/UgxlhUwQdtQ>
 
 ---
 
